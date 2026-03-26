@@ -622,6 +622,36 @@ h1, h2, h3, h4 {
     padding: 10px 22px;
 }
 
+.material-files {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+}
+
+.material-file-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--color-sand);
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-primary);
+    transition: background 0.2s ease;
+    word-break: break-all;
+}
+
+.material-file-link:hover {
+    background: var(--color-sand-dark);
+    color: var(--color-deep);
+}
+
+.material-file-link svg {
+    flex-shrink: 0;
+}
+
 
 /* --- Auth Pages --- */
 .auth-page {

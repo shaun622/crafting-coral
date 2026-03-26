@@ -23,6 +23,22 @@ $slot_icons_sm = [
     '360-video' => '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>',
 ];
 
+// Scan content directories for file lists
+$slot_file_list = [];
+$valid_slots = ['infographics', 'video', 'presentation', 'module', '360-video'];
+foreach ($valid_slots as $s) {
+    $dir = __DIR__ . '/content/' . $s;
+    $slot_file_list[$s] = [];
+    if (is_dir($dir)) {
+        foreach (scandir($dir) as $f) {
+            if ($f === '.' || $f === '..' || $f === '.htaccess') continue;
+            if (is_file($dir . '/' . $f)) {
+                $slot_file_list[$s][] = $f;
+            }
+        }
+    }
+}
+
 if (is_logged_in()) {
     // Dashboard view
     $page_title = 'Your Teaching Pack — ' . SITE_NAME;
@@ -42,13 +58,27 @@ if (is_logged_in()) {
                 <div class="materials-grid">
                     <?php foreach ($content_settings as $slot => $setting): ?>
                         <?php if (!$setting['visible']) continue; ?>
+                        <?php $files = $slot_file_list[$slot] ?? []; ?>
                         <div class="material-card">
                             <div class="material-icon">
                                 <?= $slot_icons[$slot] ?? '' ?>
                             </div>
                             <h3><?= htmlspecialchars($setting['title']) ?></h3>
                             <p><?= htmlspecialchars($setting['description']) ?></p>
-                            <a href="/download.php?file=<?= htmlspecialchars($slot) ?>" class="btn btn-secondary"><?= htmlspecialchars($setting['btn_label']) ?></a>
+                            <?php if (count($files) === 0): ?>
+                                <span class="btn btn-secondary" style="opacity: 0.5; cursor: default;">Coming Soon</span>
+                            <?php elseif (count($files) === 1): ?>
+                                <a href="/download.php?file=<?= htmlspecialchars($slot) ?>" class="btn btn-secondary"><?= htmlspecialchars($setting['btn_label']) ?></a>
+                            <?php else: ?>
+                                <div class="material-files">
+                                    <?php foreach ($files as $fname): ?>
+                                        <a href="/download.php?file=<?= htmlspecialchars($slot) ?>&amp;name=<?= urlencode($fname) ?>" class="material-file-link">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                            <?= htmlspecialchars($fname) ?>
+                                        </a>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
                 </div>

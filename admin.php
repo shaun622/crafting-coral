@@ -70,30 +70,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $msg = 'Content settings saved successfully.';
     }
 
-    // Upload file
-    if ($_POST['action'] === 'upload' && $is_admin && isset($_FILES['file'])) {
+    // Upload files (multiple per slot)
+    if ($_POST['action'] === 'upload' && $is_admin && isset($_FILES['files'])) {
         $slot = $_POST['slot'] ?? '';
-        $targets = [
-            'module' => 'content/module.pdf',
-            'presentation' => 'content/presentation.pptx',
-            'video' => 'content/video-tutorial.mp4',
-            'infographics' => 'content/infographics/infographics-pack.zip',
-            '360-video' => 'content/360-video/video.mp4',
-        ];
+        $valid_slots = ['module', 'presentation', 'video', 'infographics', '360-video'];
 
-        if (isset($targets[$slot]) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
-            $dest = __DIR__ . '/' . $targets[$slot];
-            $dir = dirname($dest);
+        if (in_array($slot, $valid_slots)) {
+            $dir = __DIR__ . '/content/' . $slot;
             if (!is_dir($dir)) {
                 mkdir($dir, 0755, true);
             }
-            if (move_uploaded_file($_FILES['file']['tmp_name'], $dest)) {
-                $msg = 'File uploaded: ' . $targets[$slot];
+
+            $uploaded = 0;
+            $files = $_FILES['files'];
+            for ($i = 0; $i < count($files['name']); $i++) {
+                if ($files['error'][$i] === UPLOAD_ERR_OK) {
+                    $name = basename($files['name'][$i]);
+                    // Sanitise filename
+                    $name = preg_replace('/[^a-zA-Z0-9._-]/', '_', $name);
+                    if (move_uploaded_file($files['tmp_name'][$i], $dir . '/' . $name)) {
+                        $uploaded++;
+                    }
+                }
+            }
+            if ($uploaded > 0) {
+                $msg = $uploaded . ' file(s) uploaded to ' . htmlspecialchars($slot) . '.';
             } else {
                 $msg_error = 'Upload failed. Check file permissions.';
             }
         } else {
-            $msg_error = 'Invalid upload.';
+            $msg_error = 'Invalid slot.';
+        }
+    }
+
+    // Delete a file
+    if ($_POST['action'] === 'delete_file' && $is_admin) {
+        $slot = $_POST['slot'] ?? '';
+        $filename = $_POST['filename'] ?? '';
+        $valid_slots = ['module', 'presentation', 'video', 'infographics', '360-video'];
+
+        if (in_array($slot, $valid_slots) && !empty($filename)) {
+            $safe_name = basename($filename);
+            $filepath = __DIR__ . '/content/' . $slot . '/' . $safe_name;
+            if (file_exists($filepath) && unlink($filepath)) {
+                $msg = 'Deleted: ' . htmlspecialchars($safe_name);
+            } else {
+                $msg_error = 'Could not delete file.';
+            }
         }
     }
 }
@@ -107,20 +130,25 @@ if ($is_admin) {
         $members[] = $row;
     }
 
-    // Check which content files exist
-    $content_files = [
-        'module' => ['path' => 'content/module.pdf', 'label' => 'Teaching Module (.pdf)'],
-        'presentation' => ['path' => 'content/presentation.pptx', 'label' => 'Presentation Deck (.pptx)'],
-        'video' => ['path' => 'content/video-tutorial.mp4', 'label' => 'Video Tutorial (.mp4)'],
-        'infographics' => ['path' => 'content/infographics/infographics-pack.zip', 'label' => 'Infographics Pack (.zip)'],
-        '360-video' => ['path' => 'content/360-video/video.mp4', 'label' => '360 Video (.mp4)'],
-    ];
-    foreach ($content_files as $key => &$file) {
-        $full = __DIR__ . '/' . $file['path'];
-        $file['exists'] = file_exists($full);
-        $file['size'] = $file['exists'] ? filesize($full) : 0;
+    // Scan content directories for files
+    $valid_slots = ['infographics', 'video', 'presentation', 'module', '360-video'];
+    $slot_files = [];
+    foreach ($valid_slots as $slot) {
+        $dir = __DIR__ . '/content/' . $slot;
+        $slot_files[$slot] = [];
+        if (is_dir($dir)) {
+            foreach (scandir($dir) as $f) {
+                if ($f === '.' || $f === '..' || $f === '.htaccess') continue;
+                $full = $dir . '/' . $f;
+                if (is_file($full)) {
+                    $slot_files[$slot][] = [
+                        'name' => $f,
+                        'size' => filesize($full),
+                    ];
+                }
+            }
+        }
     }
-    unset($file);
 
     // Content settings
     $content_settings = get_content_settings();
@@ -269,7 +297,7 @@ if ($is_admin) {
                 <div class="stat-label">Revenue</div>
             </div>
             <div class="stat">
-                <div class="stat-value"><?= count(array_filter($content_files, fn($f) => $f['exists'])) ?>/<?= count($content_files) ?></div>
+                <div class="stat-value"><?= array_sum(array_map('count', $slot_files)) ?></div>
                 <div class="stat-label">Files Uploaded</div>
             </div>
         </div>
@@ -324,25 +352,28 @@ if ($is_admin) {
             <?php endif; ?>
         </div>
 
-        <!-- Content Settings -->
+        <!-- Teaching Materials -->
         <div class="card">
-            <h2>Teaching Materials — Settings</h2>
-            <p style="color: var(--text-light); font-size: 13px; margin-bottom: 20px;">Edit titles, descriptions and visibility for each resource. Changes appear on the site immediately after saving.</p>
+            <h2>Teaching Materials</h2>
+            <p style="color: var(--text-light); font-size: 13px; margin-bottom: 20px;">Edit settings and manage files for each resource. Changes appear on the site immediately after saving.</p>
 
             <form method="POST" id="settingsForm">
                 <input type="hidden" name="action" value="update_settings">
 
                 <?php foreach ($content_settings as $slot => $setting): ?>
-                    <div class="setting-row" style="padding: 20px 0; border-bottom: 1px solid var(--sand);">
+                    <div class="setting-row" style="padding: 20px 0; border-bottom: 2px solid var(--sand);">
                         <input type="hidden" name="slot[]" value="<?= htmlspecialchars($slot) ?>">
 
+                        <!-- Header row -->
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                             <div style="display: flex; align-items: center; gap: 10px;">
-                                <span style="font-weight: 600; font-size: 14px; color: var(--deep);"><?= htmlspecialchars($slot) ?></span>
-                                <?php if (isset($content_files[$slot]) && $content_files[$slot]['exists']): ?>
-                                    <span class="tag tag-paid" style="font-size: 10px;">File uploaded</span>
+                                <span style="font-weight: 600; font-size: 15px; color: var(--deep);"><?= htmlspecialchars($setting['title']) ?></span>
+                                <span class="tag" style="font-size: 10px; background: #eef2f5; color: var(--muted);"><?= htmlspecialchars($slot) ?></span>
+                                <?php $file_count = count($slot_files[$slot] ?? []); ?>
+                                <?php if ($file_count > 0): ?>
+                                    <span class="tag tag-paid" style="font-size: 10px;"><?= $file_count ?> file<?= $file_count !== 1 ? 's' : '' ?></span>
                                 <?php else: ?>
-                                    <span class="tag" style="font-size: 10px; background: #fde8e6; color: var(--danger);">No file</span>
+                                    <span class="tag" style="font-size: 10px; background: #fde8e6; color: var(--danger);">No files</span>
                                 <?php endif; ?>
                             </div>
                             <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: var(--text-light);">
@@ -351,6 +382,7 @@ if ($is_admin) {
                             </label>
                         </div>
 
+                        <!-- Settings fields -->
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">
                             <div>
                                 <label style="display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Title</label>
@@ -361,46 +393,58 @@ if ($is_admin) {
                                 <input type="text" name="btn_label[]" value="<?= htmlspecialchars($setting['btn_label']) ?>" style="width: 100%; padding: 8px 12px; border: 2px solid #e8e0d8; border-radius: 6px; font-family: inherit; font-size: 14px;" required>
                             </div>
                         </div>
-
-                        <div>
+                        <div style="margin-bottom: 16px;">
                             <label style="display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Description</label>
                             <textarea name="description[]" rows="2" style="width: 100%; padding: 8px 12px; border: 2px solid #e8e0d8; border-radius: 6px; font-family: inherit; font-size: 14px; resize: vertical;"><?= htmlspecialchars($setting['description']) ?></textarea>
+                        </div>
+
+                        <!-- Current files -->
+                        <?php if (!empty($slot_files[$slot])): ?>
+                            <div style="margin-bottom: 12px;">
+                                <label style="display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Current Files</label>
+                                <?php foreach ($slot_files[$slot] as $sf): ?>
+                                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: #f8f5f1; border-radius: 6px; margin-bottom: 4px; font-size: 13px;">
+                                        <span style="display: flex; align-items: center; gap: 8px;">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                            <span style="color: var(--text);"><?= htmlspecialchars($sf['name']) ?></span>
+                                            <span style="color: var(--muted); font-size: 11px;"><?= number_format($sf['size'] / 1048576, 1) ?> MB</span>
+                                        </span>
+                                        <!-- Delete button (separate form so it doesn't interfere with settings form) -->
+                                        <button type="button" class="btn btn-danger" style="font-size: 11px;" onclick="deleteFile('<?= htmlspecialchars($slot) ?>', '<?= htmlspecialchars($sf['name']) ?>')">Remove</button>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+
+                        <!-- Upload area (outside settings form) -->
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <label style="display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap;">Add Files</label>
+                            <input type="file" form="upload_<?= $slot ?>" name="files[]" multiple style="font-size: 12px; flex: 1;">
+                            <button type="submit" form="upload_<?= $slot ?>" class="btn btn-primary btn-sm">Upload</button>
                         </div>
                     </div>
                 <?php endforeach; ?>
 
-                <div style="padding-top: 20px; display: flex; align-items: center; gap: 12px;">
+                <div style="padding-top: 24px; display: flex; align-items: center; gap: 12px;">
                     <button type="submit" class="btn btn-primary" id="saveBtn">Save All Changes</button>
                     <span id="saveConfirm" style="font-size: 13px; color: var(--success); display: none;">Changes saved!</span>
                 </div>
             </form>
-        </div>
 
-        <!-- File Uploads -->
-        <div class="card">
-            <h2>Upload Files</h2>
-            <p style="color: var(--text-light); font-size: 13px; margin-bottom: 20px;">Upload or replace the content files that members can download.</p>
-
-            <?php foreach ($content_files as $key => $file): ?>
-                <form method="POST" enctype="multipart/form-data">
-                    <div class="file-row">
-                        <div class="file-info">
-                            <div class="file-name"><?= $file['label'] ?></div>
-                            <?php if ($file['exists']): ?>
-                                <div class="file-status uploaded">Uploaded — <?= number_format($file['size'] / 1048576, 1) ?> MB</div>
-                            <?php else: ?>
-                                <div class="file-status">Not uploaded</div>
-                            <?php endif; ?>
-                        </div>
-                        <div class="file-actions">
-                            <input type="hidden" name="action" value="upload">
-                            <input type="hidden" name="slot" value="<?= $key ?>">
-                            <input type="file" name="file" required>
-                            <button type="submit" class="btn btn-primary btn-sm">Upload</button>
-                        </div>
-                    </div>
+            <!-- Hidden upload forms (one per slot, outside the settings form) -->
+            <?php foreach ($content_settings as $slot => $setting): ?>
+                <form id="upload_<?= $slot ?>" method="POST" enctype="multipart/form-data" style="display:none;">
+                    <input type="hidden" name="action" value="upload">
+                    <input type="hidden" name="slot" value="<?= htmlspecialchars($slot) ?>">
                 </form>
             <?php endforeach; ?>
+
+            <!-- Hidden delete form -->
+            <form id="deleteFileForm" method="POST" style="display:none;">
+                <input type="hidden" name="action" value="delete_file">
+                <input type="hidden" name="slot" id="deleteSlot">
+                <input type="hidden" name="filename" id="deleteFilename">
+            </form>
         </div>
     </div>
 <?php endif; ?>
@@ -419,6 +463,14 @@ document.addEventListener('DOMContentLoaded', function() {
     if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 <?php endif; ?>
+
+// Delete file handler
+function deleteFile(slot, filename) {
+    if (!confirm('Delete ' + filename + '?')) return;
+    document.getElementById('deleteSlot').value = slot;
+    document.getElementById('deleteFilename').value = filename;
+    document.getElementById('deleteFileForm').submit();
+}
 
 // Warn on unsaved changes
 (function() {
