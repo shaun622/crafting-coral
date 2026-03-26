@@ -1,0 +1,8 @@
+{
+    "name": "crafting-coral/course",
+    "description": "Crafting Coral Teaching Pack — Course Subdomain",
+    "require": {
+        "php": ">=8.0",
+        "stripe/stripe-php": "^16.0"
+    }
+}

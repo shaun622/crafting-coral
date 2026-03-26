@@ -1,0 +1,26 @@
+# Database
+members.db
+
+# Dependencies
+/vendor/
+
+# Composer lock (generated on install)
+composer.lock
+
+# Environment / secrets
+includes/config.php
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Content files (provided separately)
+content/*.mp4
+content/*.pdf
+content/*.pptx
+content/*.zip
+content/infographics/*
+content/360-video/*
+!content/.htaccess
+!content/infographics/.gitkeep
+!content/360-video/.gitkeep
