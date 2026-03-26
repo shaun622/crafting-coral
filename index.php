@@ -4,6 +4,25 @@ require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/auth.php';
 
+$content_settings = get_content_settings();
+
+// SVG icons per slot
+$slot_icons = [
+    'infographics' => '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>',
+    'video' => '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>',
+    'presentation' => '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>',
+    'module' => '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+    '360-video' => '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>',
+];
+
+$slot_icons_sm = [
+    'infographics' => '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>',
+    'video' => '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>',
+    'presentation' => '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>',
+    'module' => '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+    '360-video' => '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>',
+];
+
 if (is_logged_in()) {
     // Dashboard view
     $page_title = 'Your Teaching Pack — ' . SITE_NAME;
@@ -21,50 +40,17 @@ if (is_logged_in()) {
         <section class="materials">
             <div class="container">
                 <div class="materials-grid">
-                    <div class="material-card">
-                        <div class="material-icon">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                    <?php foreach ($content_settings as $slot => $setting): ?>
+                        <?php if (!$setting['visible']) continue; ?>
+                        <div class="material-card">
+                            <div class="material-icon">
+                                <?= $slot_icons[$slot] ?? '' ?>
+                            </div>
+                            <h3><?= htmlspecialchars($setting['title']) ?></h3>
+                            <p><?= htmlspecialchars($setting['description']) ?></p>
+                            <a href="/download.php?file=<?= htmlspecialchars($slot) ?>" class="btn btn-secondary"><?= htmlspecialchars($setting['btn_label']) ?></a>
                         </div>
-                        <h3>Display Graphics</h3>
-                        <p>Infographics, statistics, images and a workshop summary for your classroom.</p>
-                        <a href="/download.php?file=infographics" class="btn btn-secondary">Download Pack</a>
-                    </div>
-
-                    <div class="material-card">
-                        <div class="material-icon">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                        </div>
-                        <h3>Video Tutorial</h3>
-                        <p>Theory and practical guidance to help you deliver the workshop with confidence.</p>
-                        <a href="/download.php?file=video" class="btn btn-secondary">Download Video</a>
-                    </div>
-
-                    <div class="material-card">
-                        <div class="material-icon">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
-                        </div>
-                        <h3>Presentation Deck</h3>
-                        <p>Ready-to-use classroom slides you can present or adapt to your needs.</p>
-                        <a href="/download.php?file=presentation" class="btn btn-secondary">Download Slides</a>
-                    </div>
-
-                    <div class="material-card">
-                        <div class="material-icon">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-                        </div>
-                        <h3>Teaching Module</h3>
-                        <p>Structured lesson content with learning objectives, activities and assessment ideas.</p>
-                        <a href="/download.php?file=module" class="btn btn-secondary">Download Module</a>
-                    </div>
-
-                    <div class="material-card">
-                        <div class="material-icon">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>
-                        </div>
-                        <h3>360&deg; Video</h3>
-                        <p>Take your students on a virtual visit to our coral restoration site.</p>
-                        <a href="/download.php?file=360-video" class="btn btn-secondary">Download Video</a>
-                    </div>
+                    <?php endforeach; ?>
                 </div>
             </div>
         </section>
@@ -89,44 +75,37 @@ if (is_logged_in()) {
             </div>
         </section>
 
-        <section class="whats-inside">
+        <section class="preview-section">
             <div class="container">
-                <h2>What's Inside the Pack</h2>
-                <div class="features-grid">
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                <h2>Your Members Dashboard</h2>
+                <p class="preview-subtitle">Here's what you'll get instant access to after purchase</p>
+                <div class="preview-wrapper">
+                    <div class="preview-blur">
+                        <div class="preview-header">
+                            <h3>Your Teaching Pack</h3>
+                            <p>Everything you need to run a Crafting Coral workshop.</p>
                         </div>
-                        <h3>Display Graphics</h3>
-                        <p>Infographics, statistics, images and a workshop summary.</p>
+                        <div class="preview-grid">
+                            <?php foreach ($content_settings as $slot => $setting): ?>
+                                <?php if (!$setting['visible']) continue; ?>
+                                <div class="preview-card">
+                                    <div class="preview-card-icon">
+                                        <?= $slot_icons_sm[$slot] ?? '' ?>
+                                    </div>
+                                    <h4><?= htmlspecialchars($setting['title']) ?></h4>
+                                    <p><?= htmlspecialchars($setting['description']) ?></p>
+                                    <span class="preview-btn"><?= htmlspecialchars($setting['btn_label']) ?></span>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    <div class="preview-overlay">
+                        <div class="preview-overlay-content">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 16px; opacity: 0.9;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            <h3>Unlock Your Teaching Pack</h3>
+                            <p>Get instant access to all resources with a one-time payment</p>
+                            <a href="/stripe-checkout.php" class="btn btn-primary btn-lg">Get Access &mdash; &pound;100</a>
                         </div>
-                        <h3>Video Tutorial</h3>
-                        <p>Theory and practical guidance for delivering the workshop.</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
-                        </div>
-                        <h3>Presentation Deck</h3>
-                        <p>Ready-to-use classroom slides you can present or adapt.</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-                        </div>
-                        <h3>Teaching Module</h3>
-                        <p>Structured lesson content with objectives and activities.</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>
-                        </div>
-                        <h3>360&deg; Video</h3>
-                        <p>A virtual visit to our coral restoration site.</p>
                     </div>
                 </div>
             </div>
