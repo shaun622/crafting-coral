@@ -240,10 +240,47 @@ if ($is_admin) {
         .login-card .btn { width: 100%; padding: 10px; }
         .login-error { color: var(--danger); font-size: 13px; margin-bottom: 12px; }
 
+        /* Setting rows */
+        .setting-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        .setting-header-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .setting-header-left .slot-title { font-weight: 600; font-size: 15px; color: var(--deep); }
+        .setting-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
+        .setting-label { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+        .setting-input { width: 100%; padding: 8px 12px; border: 2px solid #e8e0d8; border-radius: 6px; font-family: inherit; font-size: 14px; }
+        .setting-input:focus { outline: none; border-color: var(--primary); }
+        .setting-textarea { width: 100%; padding: 8px 12px; border: 2px solid #e8e0d8; border-radius: 6px; font-family: inherit; font-size: 14px; resize: vertical; }
+        .setting-textarea:focus { outline: none; border-color: var(--primary); }
+
+        .current-file { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: #f8f5f1; border-radius: 6px; margin-bottom: 4px; font-size: 13px; gap: 8px; }
+        .current-file-info { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
+        .current-file-info span { overflow: hidden; text-overflow: ellipsis; }
+        .file-size { color: var(--muted); font-size: 11px; white-space: nowrap; }
+
+        .upload-row { display: flex; align-items: center; gap: 10px; }
+        .upload-row input[type="file"] { font-size: 12px; flex: 1; min-width: 0; }
+
+        .visibility-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: var(--text-light); white-space: nowrap; }
+        .visibility-label input { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
+
         @media (max-width: 640px) {
+            .admin-nav { padding: 12px 16px; }
+            .admin-nav h1 { font-size: 14px; }
+            .container { padding: 20px 16px; }
+            .card { padding: 20px 16px; }
             .form-row { flex-direction: column; }
             .file-row { flex-direction: column; align-items: flex-start; }
             .stats { grid-template-columns: 1fr 1fr; }
+            .stat { padding: 14px; }
+            .stat-value { font-size: 1.5rem; }
+            .setting-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .setting-fields { grid-template-columns: 1fr; }
+            .current-file { flex-direction: column; align-items: flex-start; gap: 4px; }
+            .upload-row { flex-direction: column; align-items: stretch; }
+            .upload-row .btn { text-align: center; }
+            table { font-size: 12px; }
+            th, td { padding: 8px 6px; }
+            .admin-nav-links { gap: 10px; }
+            .admin-nav a, .admin-nav button { font-size: 12px; }
         }
     </style>
 </head>
@@ -364,10 +401,9 @@ if ($is_admin) {
                     <div class="setting-row" style="padding: 20px 0; border-bottom: 2px solid var(--sand);">
                         <input type="hidden" name="slot[]" value="<?= htmlspecialchars($slot) ?>">
 
-                        <!-- Header row -->
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <span style="font-weight: 600; font-size: 15px; color: var(--deep);"><?= htmlspecialchars($setting['title']) ?></span>
+                        <div class="setting-header">
+                            <div class="setting-header-left">
+                                <span class="slot-title"><?= htmlspecialchars($setting['title']) ?></span>
                                 <span class="tag" style="font-size: 10px; background: #eef2f5; color: var(--muted);"><?= htmlspecialchars($slot) ?></span>
                                 <?php $file_count = count($slot_files[$slot] ?? []); ?>
                                 <?php if ($file_count > 0): ?>
@@ -376,50 +412,46 @@ if ($is_admin) {
                                     <span class="tag" style="font-size: 10px; background: #fde8e6; color: var(--danger);">No files</span>
                                 <?php endif; ?>
                             </div>
-                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: var(--text-light);">
-                                <input type="checkbox" name="visible[]" value="<?= htmlspecialchars($slot) ?>" <?= $setting['visible'] ? 'checked' : '' ?> style="width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;">
+                            <label class="visibility-label">
+                                <input type="checkbox" name="visible[]" value="<?= htmlspecialchars($slot) ?>" <?= $setting['visible'] ? 'checked' : '' ?>>
                                 Visible
                             </label>
                         </div>
 
-                        <!-- Settings fields -->
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">
+                        <div class="setting-fields">
                             <div>
-                                <label style="display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Title</label>
-                                <input type="text" name="title[]" value="<?= htmlspecialchars($setting['title']) ?>" style="width: 100%; padding: 8px 12px; border: 2px solid #e8e0d8; border-radius: 6px; font-family: inherit; font-size: 14px;" required>
+                                <label class="setting-label">Title</label>
+                                <input type="text" name="title[]" value="<?= htmlspecialchars($setting['title']) ?>" class="setting-input" required>
                             </div>
                             <div>
-                                <label style="display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Button Label</label>
-                                <input type="text" name="btn_label[]" value="<?= htmlspecialchars($setting['btn_label']) ?>" style="width: 100%; padding: 8px 12px; border: 2px solid #e8e0d8; border-radius: 6px; font-family: inherit; font-size: 14px;" required>
+                                <label class="setting-label">Button Label</label>
+                                <input type="text" name="btn_label[]" value="<?= htmlspecialchars($setting['btn_label']) ?>" class="setting-input" required>
                             </div>
                         </div>
                         <div style="margin-bottom: 16px;">
-                            <label style="display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Description</label>
-                            <textarea name="description[]" rows="2" style="width: 100%; padding: 8px 12px; border: 2px solid #e8e0d8; border-radius: 6px; font-family: inherit; font-size: 14px; resize: vertical;"><?= htmlspecialchars($setting['description']) ?></textarea>
+                            <label class="setting-label">Description</label>
+                            <textarea name="description[]" rows="2" class="setting-textarea"><?= htmlspecialchars($setting['description']) ?></textarea>
                         </div>
 
-                        <!-- Current files -->
                         <?php if (!empty($slot_files[$slot])): ?>
                             <div style="margin-bottom: 12px;">
-                                <label style="display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Current Files</label>
+                                <label class="setting-label" style="margin-bottom: 8px;">Current Files</label>
                                 <?php foreach ($slot_files[$slot] as $sf): ?>
-                                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: #f8f5f1; border-radius: 6px; margin-bottom: 4px; font-size: 13px;">
-                                        <span style="display: flex; align-items: center; gap: 8px;">
+                                    <div class="current-file">
+                                        <span class="current-file-info">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                                             <span style="color: var(--text);"><?= htmlspecialchars($sf['name']) ?></span>
-                                            <span style="color: var(--muted); font-size: 11px;"><?= number_format($sf['size'] / 1048576, 1) ?> MB</span>
+                                            <span class="file-size"><?= number_format($sf['size'] / 1048576, 1) ?> MB</span>
                                         </span>
-                                        <!-- Delete button (separate form so it doesn't interfere with settings form) -->
                                         <button type="button" class="btn btn-danger" style="font-size: 11px;" onclick="deleteFile('<?= htmlspecialchars($slot) ?>', '<?= htmlspecialchars($sf['name']) ?>')">Remove</button>
                                     </div>
                                 <?php endforeach; ?>
                             </div>
                         <?php endif; ?>
 
-                        <!-- Upload area (outside settings form) -->
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <label style="display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap;">Add Files</label>
-                            <input type="file" form="upload_<?= $slot ?>" name="files[]" multiple style="font-size: 12px; flex: 1;">
+                        <div class="upload-row">
+                            <label class="setting-label" style="white-space: nowrap; margin-bottom: 0;">Add Files</label>
+                            <input type="file" form="upload_<?= $slot ?>" name="files[]" multiple>
                             <button type="submit" form="upload_<?= $slot ?>" class="btn btn-primary btn-sm">Upload</button>
                         </div>
                     </div>
