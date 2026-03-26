@@ -21,9 +21,10 @@ define('STRIPE_CURRENCY', 'gbp');
 // Auth
 define('MAGIC_LINK_EXPIRY', 3600); // 1 hour in seconds
 
-// Email — configure to match your Hostinger email
-define('FROM_EMAIL', 'noreply@craftingcoral.com');
+// Email (Resend) — get API key from https://resend.com
+define('FROM_EMAIL', 'course@craftingcoral.com');
 define('FROM_NAME', 'Crafting Coral');
+define('RESEND_API_KEY', 're_XXXXXXXXXXXX');
 
 // Database
 define('DB_PATH', __DIR__ . '/../members.db');

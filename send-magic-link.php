@@ -33,20 +33,64 @@ if (!empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
 
         // Send email
         $subject = 'Your Crafting Coral Login Link';
-        $body = "<!DOCTYPE html><html><body style=\"font-family: Arial, sans-serif; color: #1a1a1a; max-width: 500px; margin: 0 auto;\">"
-            . "<div style=\"padding: 30px 20px; text-align: center;\">"
-            . "<h2 style=\"color: #0c3547;\">Crafting Coral</h2>"
-            . "<p>Click the button below to access your teaching materials:</p>"
-            . "<p style=\"margin: 30px 0;\"><a href=\"" . htmlspecialchars($link) . "\" style=\"background: #42718f; color: #fff; padding: 14px 28px; border-radius: 6px; text-decoration: none; display: inline-block;\">Access Your Teaching Pack</a></p>"
-            . "<p style=\"font-size: 13px; color: #666;\">This link expires in 1 hour. If you didn't request this, you can safely ignore this email.</p>"
-            . "</div></body></html>";
+        $escaped_link = htmlspecialchars($link);
+        $body = <<<HTML
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin: 0; padding: 0; background-color: #f5f0eb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f0eb; padding: 40px 20px;">
+    <tr><td align="center">
+      <table width="480" cellpadding="0" cellspacing="0" style="max-width: 480px; width: 100%;">
 
-        $headers = "From: " . FROM_NAME . " <" . FROM_EMAIL . ">\r\n"
-            . "Reply-To: " . FROM_EMAIL . "\r\n"
-            . "MIME-Version: 1.0\r\n"
-            . "Content-Type: text/html; charset=UTF-8\r\n";
+        <!-- Header -->
+        <tr><td style="background: #0c3547; padding: 32px 40px; border-radius: 12px 12px 0 0; text-align: center;">
+          <img src="https://course.craftingcoral.com/assets/logo.svg" alt="Crafting Coral" height="32" style="height: 32px; filter: brightness(0) invert(1);">
+        </td></tr>
 
-        mail($email, $subject, $body, $headers);
+        <!-- Body -->
+        <tr><td style="background: #ffffff; padding: 48px 40px; text-align: center;">
+          <h1 style="margin: 0 0 12px; font-size: 22px; font-weight: 600; color: #0c3547;">Welcome back</h1>
+          <p style="margin: 0 0 32px; font-size: 15px; line-height: 1.6; color: #5a7080;">Click the button below to access your Crafting Coral teaching materials.</p>
+          <a href="{$escaped_link}" style="display: inline-block; background: #42718f; color: #ffffff; padding: 16px 36px; border-radius: 8px; text-decoration: none; font-size: 16px; font-weight: 600;">Access Your Teaching Pack</a>
+          <p style="margin: 32px 0 0; font-size: 13px; color: #8a9baa; line-height: 1.5;">This link expires in 1 hour and can only be used once.</p>
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="background: #f5f0eb; padding: 24px 40px; text-align: center; border-top: 1px solid #e8e0d8;">
+          <p style="margin: 0 0 4px; font-size: 12px; color: #8a9baa;">Crafting Coral — Conservation through creativity</p>
+          <p style="margin: 0; font-size: 12px; color: #b0bec5;">If you didn't request this link, you can safely ignore this email.</p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
+HTML;
+
+        // Send via Resend API
+        $resend_data = json_encode([
+            'from' => FROM_NAME . ' <' . FROM_EMAIL . '>',
+            'reply_to' => 'info@craftingcoral.com',
+            'to' => [$email],
+            'subject' => $subject,
+            'html' => $body,
+        ]);
+
+        $ch = curl_init('https://api.resend.com/emails');
+        curl_setopt_array($ch, [
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer ' . RESEND_API_KEY,
+                'Content-Type: application/json',
+            ],
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $resend_data,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+        ]);
+        curl_exec($ch);
+        curl_close($ch);
     }
 }
 
