@@ -53,3 +53,11 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
     Header set X-XSS-Protection "1; mode=block"
     Header set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
+
+# Font MIME types (must be correct for nosniff)
+<IfModule mod_mime.c>
+    AddType font/ttf .ttf
+    AddType font/otf .otf
+    AddType font/woff .woff
+    AddType font/woff2 .woff2
+</IfModule>
