@@ -2,8 +2,16 @@
 
 require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/includes/db.php';
 
 \Stripe\Stripe::setApiKey(STRIPE_SECRET_KEY);
+
+$price = get_current_price();
+
+$product_description = 'Lifetime access to all teaching materials, including future updates.';
+if ($price['is_launch']) {
+    $product_description .= ' Launch offer — one of the first ' . LAUNCH_OFFER_LIMIT . ' spots.';
+}
 
 try {
     $session = \Stripe\Checkout\Session::create([
@@ -12,10 +20,10 @@ try {
         'line_items' => [[
             'price_data' => [
                 'currency' => STRIPE_CURRENCY,
-                'unit_amount' => STRIPE_PRICE_AMOUNT,
+                'unit_amount' => $price['amount'],
                 'product_data' => [
                     'name' => 'Crafting Coral Teaching Pack',
-                    'description' => 'Lifetime access to all teaching materials, including future updates.',
+                    'description' => $product_description,
                 ],
             ],
             'quantity' => 1,

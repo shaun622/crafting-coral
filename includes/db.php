@@ -122,3 +122,42 @@ function update_content_setting(string $slot, string $title, string $description
     $stmt->bindValue(':slot', $slot, SQLITE3_TEXT);
     return $stmt->execute() !== false;
 }
+
+// --- Pricing ---
+
+function get_paid_member_count(): int
+{
+    $db = get_db();
+    // Only count real Stripe-paid members (exclude manual and test entries)
+    $result = $db->query("SELECT COUNT(*) AS c FROM members WHERE stripe_customer_id LIKE 'cus_%'");
+    $row = $result->fetchArray(SQLITE3_ASSOC);
+    return (int) ($row['c'] ?? 0);
+}
+
+function get_current_price(): array
+{
+    $regular_amount = REGULAR_PRICE;
+    $regular_display = '£' . number_format($regular_amount / 100, 0);
+
+    if (LAUNCH_OFFER_ENABLED) {
+        $paid = get_paid_member_count();
+        $spots_left = LAUNCH_OFFER_LIMIT - $paid;
+        if ($spots_left > 0) {
+            return [
+                'amount' => LAUNCH_OFFER_PRICE,
+                'display' => '£' . number_format(LAUNCH_OFFER_PRICE / 100, 0),
+                'is_launch' => true,
+                'spots_left' => $spots_left,
+                'spots_total' => LAUNCH_OFFER_LIMIT,
+                'regular_amount' => $regular_amount,
+                'regular_display' => $regular_display,
+            ];
+        }
+    }
+
+    return [
+        'amount' => $regular_amount,
+        'display' => $regular_display,
+        'is_launch' => false,
+    ];
+}

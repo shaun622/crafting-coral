@@ -91,6 +91,7 @@ if (is_logged_in()) {
 } else {
     // Sales page view
     $page_title = 'Bring Coral Reef Conservation Into Your Classroom — ' . SITE_NAME;
+    $price = get_current_price();
     require_once __DIR__ . '/includes/header.php';
     ?>
 
@@ -98,9 +99,21 @@ if (is_logged_in()) {
         <section class="hero">
             <div class="hero-overlay"></div>
             <div class="container hero-content">
+                <?php if ($price['is_launch']): ?>
+                    <div class="launch-badge">
+                        <span class="launch-dot"></span>
+                        Launch offer — <?= $price['spots_left'] ?> of <?= $price['spots_total'] ?> spots left at <?= $price['display'] ?>
+                    </div>
+                <?php endif; ?>
                 <h1>Bring Coral Reef Conservation Into Your Classroom</h1>
                 <p class="hero-sub">A hands-on teaching pack for educators who want to raise the next generation of ocean stewards.</p>
-                <a href="/stripe-checkout.php" class="btn btn-primary btn-lg">Get the Teaching Pack &mdash; &pound;100</a>
+                <a href="/stripe-checkout.php" class="btn btn-primary btn-lg">
+                    <?php if ($price['is_launch']): ?>
+                        Get the Teaching Pack &mdash; <span class="price-old"><?= $price['regular_display'] ?></span> <?= $price['display'] ?>
+                    <?php else: ?>
+                        Get the Teaching Pack &mdash; <?= $price['display'] ?>
+                    <?php endif; ?>
+                </a>
                 <p class="hero-note">One-time payment. Lifetime access. Updated materials included.</p>
             </div>
         </section>
@@ -134,7 +147,13 @@ if (is_logged_in()) {
                             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 16px; opacity: 0.9;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                             <h3>Unlock Your Teaching Pack</h3>
                             <p>Get instant access to all resources with a one-time payment</p>
-                            <a href="/stripe-checkout.php" class="btn btn-primary btn-lg">Get Access &mdash; &pound;100</a>
+                            <a href="/stripe-checkout.php" class="btn btn-primary btn-lg">
+                                <?php if ($price['is_launch']): ?>
+                                    Get Access &mdash; <span class="price-old"><?= $price['regular_display'] ?></span> <?= $price['display'] ?>
+                                <?php else: ?>
+                                    Get Access &mdash; <?= $price['display'] ?>
+                                <?php endif; ?>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -159,9 +178,18 @@ if (is_logged_in()) {
 
         <section class="pricing">
             <div class="container">
-                <div class="pricing-card">
+                <div class="pricing-card<?= $price['is_launch'] ? ' pricing-card-launch' : '' ?>">
+                    <?php if ($price['is_launch']): ?>
+                        <span class="pricing-launch-tag">Launch offer &mdash; <?= $price['spots_left'] ?> of <?= $price['spots_total'] ?> spots left</span>
+                    <?php endif; ?>
                     <span class="pricing-label">Teaching Pack</span>
-                    <div class="pricing-amount">&pound;100</div>
+                    <div class="pricing-amount">
+                        <?php if ($price['is_launch']): ?>
+                            <span class="price-old"><?= $price['regular_display'] ?></span> <?= $price['display'] ?>
+                        <?php else: ?>
+                            <?= $price['display'] ?>
+                        <?php endif; ?>
+                    </div>
                     <p class="pricing-detail">Lifetime Access</p>
                     <ul class="pricing-features">
                         <li>One-time purchase — no subscriptions</li>

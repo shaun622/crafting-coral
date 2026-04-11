@@ -295,6 +295,64 @@ h1, h2, h3, h4 {
     color: rgba(255, 255, 255, 0.5);
 }
 
+/* --- Launch Offer --- */
+.launch-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 20px;
+    letter-spacing: 0.2px;
+}
+
+.launch-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ff6b6b;
+    box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.7);
+    animation: launch-pulse 2s infinite;
+}
+
+@keyframes launch-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.7); }
+    70% { box-shadow: 0 0 0 8px rgba(255, 107, 107, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0); }
+}
+
+.price-old {
+    text-decoration: line-through;
+    opacity: 0.6;
+    font-weight: 400;
+    margin-right: 4px;
+}
+
+.pricing-card-launch {
+    position: relative;
+    border: 2px solid var(--color-primary, #2a9d8f);
+}
+
+.pricing-launch-tag {
+    display: inline-block;
+    background: var(--color-primary, #2a9d8f);
+    color: #fff;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+}
+
 
 /* --- Sales Page: What's Inside --- */
 .whats-inside {
