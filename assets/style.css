@@ -32,6 +32,13 @@
     font-style: normal;
     font-display: swap;
 }
+/* Fallback for currency/symbol glyphs missing from Optima TTFs
+   (covers £, €, ¥, ¢, ₹, ₽, ₩, ₪, ₫, ₱ etc.) */
+@font-face {
+    font-family: 'Optima';
+    src: local('Candara'), local('Segoe UI'), local('Helvetica Neue'), local('Arial');
+    unicode-range: U+00A2-00A5, U+20A0-20CF;
+}
 
 /* --- Reset & Base --- */
 *, *::before, *::after {
