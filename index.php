@@ -53,6 +53,12 @@ if (is_logged_in()) {
             </div>
         </section>
 
+        <section class="dashboard-intro">
+            <div class="container">
+                <p>This guide provides all the necessary materials and instructions to support the delivery of a Crafting Coral ceramic workshop. It includes teaching guidance, logistical considerations, and step-by-step facilitation support to ensure a smooth and engaging session. The workshop is designed to run for approximately 90–120 minutes, including a 30–40 minute presentation, followed by a hands-on creative activity. This format allows participants to learn about coral reefs while actively creating their own CoralPod.</p>
+            </div>
+        </section>
+
         <section class="materials">
             <div class="container">
                 <div class="materials-grid">
