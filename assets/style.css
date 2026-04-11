@@ -33,10 +33,34 @@
     font-display: swap;
 }
 /* Fallback for currency/symbol glyphs missing from Optima TTFs
-   (covers £, €, ¥, ¢, ₹, ₽, ₩, ₪, ₫, ₱ etc.) */
+   (covers £, €, ¥, ¢, ₹, ₽, ₩, ₪, ₫, ₱ etc.)
+   One rule per weight so bold buttons also pick up the fallback. */
 @font-face {
     font-family: 'Optima';
     src: local('Candara'), local('Segoe UI'), local('Helvetica Neue'), local('Arial');
+    font-weight: 400;
+    font-style: normal;
+    unicode-range: U+00A2-00A5, U+20A0-20CF;
+}
+@font-face {
+    font-family: 'Optima';
+    src: local('Candara'), local('Segoe UI'), local('Helvetica Neue'), local('Arial');
+    font-weight: 500;
+    font-style: normal;
+    unicode-range: U+00A2-00A5, U+20A0-20CF;
+}
+@font-face {
+    font-family: 'Optima';
+    src: local('Candara Bold'), local('Segoe UI Bold'), local('Helvetica Neue Bold'), local('Arial Bold'), local('Candara'), local('Segoe UI');
+    font-weight: 700;
+    font-style: normal;
+    unicode-range: U+00A2-00A5, U+20A0-20CF;
+}
+@font-face {
+    font-family: 'Optima';
+    src: local('Candara Italic'), local('Segoe UI Italic'), local('Helvetica Neue Italic'), local('Arial Italic');
+    font-weight: 400;
+    font-style: italic;
     unicode-range: U+00A2-00A5, U+20A0-20CF;
 }
 
