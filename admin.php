@@ -37,6 +37,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
     }
 
+    // Edit member (rename email)
+    if ($_POST['action'] === 'edit_member' && $is_admin) {
+        $old_email = strtolower(trim($_POST['old_email'] ?? ''));
+        $new_email = strtolower(trim($_POST['new_email'] ?? ''));
+        if (empty($old_email) || empty($new_email)) {
+            $msg_error = 'Both old and new email are required.';
+        } elseif (!filter_var($new_email, FILTER_VALIDATE_EMAIL)) {
+            $msg_error = 'Invalid email address.';
+        } elseif ($old_email === $new_email) {
+            $msg_error = 'New email is the same as the old one.';
+        } else {
+            $db = get_db();
+            // Check if new email already exists
+            $chk = $db->prepare('SELECT id FROM members WHERE email = :email');
+            $chk->bindValue(':email', $new_email, SQLITE3_TEXT);
+            if ($chk->execute()->fetchArray()) {
+                $msg_error = 'A member with that email already exists.';
+            } else {
+                $stmt = $db->prepare('UPDATE members SET email = :new_email WHERE email = :old_email');
+                $stmt->bindValue(':new_email', $new_email, SQLITE3_TEXT);
+                $stmt->bindValue(':old_email', $old_email, SQLITE3_TEXT);
+                $stmt->execute();
+                $msg = 'Member updated: ' . htmlspecialchars($old_email) . ' → ' . htmlspecialchars($new_email);
+            }
+        }
+    }
+
     // Delete member
     if ($_POST['action'] === 'delete_member' && $is_admin) {
         $email = strtolower(trim($_POST['email'] ?? ''));
@@ -376,7 +403,8 @@ if ($is_admin) {
                                         <?php endif; ?>
                                     </td>
                                     <td style="color: var(--muted); font-size: 13px;"><?= date('j M Y', strtotime($m['paid_at'])) ?></td>
-                                    <td>
+                                    <td style="white-space: nowrap;">
+                                        <button type="button" class="btn btn-secondary" onclick="editMember('<?= htmlspecialchars($m['email'], ENT_QUOTES) ?>')">Edit</button>
                                         <form method="POST" style="display:inline;" onsubmit="return confirm('Remove <?= htmlspecialchars($m['email']) ?>?');">
                                             <input type="hidden" name="action" value="delete_member">
                                             <input type="hidden" name="email" value="<?= htmlspecialchars($m['email']) ?>">
@@ -483,6 +511,13 @@ if ($is_admin) {
                 <input type="hidden" name="slot" id="deleteSlot">
                 <input type="hidden" name="filename" id="deleteFilename">
             </form>
+
+            <!-- Hidden edit member form -->
+            <form id="editMemberForm" method="POST" style="display:none;">
+                <input type="hidden" name="action" value="edit_member">
+                <input type="hidden" name="old_email" id="editOldEmail">
+                <input type="hidden" name="new_email" id="editNewEmail">
+            </form>
         </div>
     </div>
 <?php endif; ?>
@@ -508,6 +543,17 @@ function deleteFile(slot, filename) {
     document.getElementById('deleteSlot').value = slot;
     document.getElementById('deleteFilename').value = filename;
     document.getElementById('deleteFileForm').submit();
+}
+
+// Edit member handler
+function editMember(oldEmail) {
+    var newEmail = prompt('Update email address for this member:', oldEmail);
+    if (newEmail === null) return;
+    newEmail = newEmail.trim();
+    if (!newEmail || newEmail === oldEmail) return;
+    document.getElementById('editOldEmail').value = oldEmail;
+    document.getElementById('editNewEmail').value = newEmail;
+    document.getElementById('editMemberForm').submit();
 }
 
 // Warn on unsaved changes
