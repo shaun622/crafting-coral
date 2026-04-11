@@ -176,6 +176,30 @@ if (is_logged_in()) {
             </div>
         </section>
 
+        <section class="gallery">
+            <div class="container">
+                <h2>The Workshop in Action</h2>
+                <p class="gallery-subtitle">See how students around the world are learning about coral reefs through creativity and play.</p>
+                <div class="gallery-grid">
+                    <figure class="gallery-item gallery-item-tall">
+                        <img src="/assets/images/coral-interaction-1024x1024.jpg" alt="Students crafting coral" loading="lazy">
+                    </figure>
+                    <figure class="gallery-item">
+                        <img src="/assets/images/community-interaction-1024x1024.jpg" alt="Community workshop" loading="lazy">
+                    </figure>
+                    <figure class="gallery-item">
+                        <img src="/assets/images/crativity-interaction-1024x1024.jpg" alt="Creative session" loading="lazy">
+                    </figure>
+                    <figure class="gallery-item gallery-item-wide">
+                        <img src="/assets/images/crafting-coral-landing-video-overlay-scaled-1.jpg" alt="Crafting Coral workshop" loading="lazy">
+                    </figure>
+                    <figure class="gallery-item gallery-item-wide">
+                        <img src="/assets/images/Crafting-Coral-home-get-involved-invert-1.jpg" alt="Get involved with Crafting Coral" loading="lazy">
+                    </figure>
+                </div>
+            </div>
+        </section>
+
         <section class="pricing">
             <div class="container">
                 <div class="pricing-card<?= $price['is_launch'] ? ' pricing-card-launch' : '' ?>">

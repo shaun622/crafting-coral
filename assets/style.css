@@ -593,6 +593,84 @@ h1, h2, h3, h4 {
 }
 
 
+/* --- Sales Page: Gallery --- */
+.gallery {
+    padding: 100px 24px;
+    background: var(--color-white);
+    text-align: center;
+}
+
+.gallery h2 {
+    font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+    margin-bottom: 12px;
+}
+
+.gallery-subtitle {
+    max-width: 640px;
+    margin: 0 auto 48px;
+    font-size: 1.05rem;
+    color: var(--color-text-light);
+    line-height: 1.6;
+}
+
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-auto-rows: 180px;
+    gap: 16px;
+    max-width: var(--container-width);
+    margin: 0 auto;
+}
+
+.gallery-item {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    grid-column: span 2;
+    grid-row: span 1;
+}
+
+.gallery-item-tall {
+    grid-row: span 2;
+}
+
+.gallery-item-wide {
+    grid-column: span 3;
+}
+
+.gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.5s ease;
+}
+
+.gallery-item:hover img {
+    transform: scale(1.04);
+}
+
+@media (max-width: 768px) {
+    .gallery {
+        padding: 70px 20px;
+    }
+    .gallery-grid {
+        grid-template-columns: repeat(2, 1fr);
+        grid-auto-rows: 140px;
+        gap: 12px;
+    }
+    .gallery-item,
+    .gallery-item-wide {
+        grid-column: span 1;
+    }
+    .gallery-item-tall {
+        grid-column: span 2;
+        grid-row: span 1;
+    }
+}
+
+
 /* --- Sales Page: Pricing --- */
 .pricing {
     padding: 100px 24px;
