@@ -56,8 +56,23 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
 # Font MIME types (must be correct for nosniff)
 <IfModule mod_mime.c>
+    RemoveType .ttf .otf .woff .woff2
     AddType font/ttf .ttf
     AddType font/otf .otf
     AddType font/woff .woff
     AddType font/woff2 .woff2
 </IfModule>
+
+# Force override Content-Type on font files in case server config defines its own
+<FilesMatch "\.ttf$">
+    ForceType font/ttf
+</FilesMatch>
+<FilesMatch "\.otf$">
+    ForceType font/otf
+</FilesMatch>
+<FilesMatch "\.woff$">
+    ForceType font/woff
+</FilesMatch>
+<FilesMatch "\.woff2$">
+    ForceType font/woff2
+</FilesMatch>
