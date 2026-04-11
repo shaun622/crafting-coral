@@ -55,6 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $titles = $_POST['title'] ?? [];
         $descriptions = $_POST['description'] ?? [];
         $btn_labels = $_POST['btn_label'] ?? [];
+        $urls = $_POST['url'] ?? [];
         $visible_slots = $_POST['visible'] ?? [];
 
         foreach ($slots as $i => $slot) {
@@ -64,7 +65,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $titles[$i] ?? '',
                 $descriptions[$i] ?? '',
                 $btn_labels[$i] ?? 'Download',
-                $vis
+                $vis,
+                trim($urls[$i] ?? '')
             );
         }
         $msg = 'Content settings saved successfully.';
@@ -431,6 +433,10 @@ if ($is_admin) {
                         <div style="margin-bottom: 16px;">
                             <label class="setting-label">Description</label>
                             <textarea name="description[]" rows="2" class="setting-textarea"><?= htmlspecialchars($setting['description']) ?></textarea>
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label class="setting-label">External Link URL <span style="font-weight: 400; color: var(--muted);">(optional — if set, button opens this link instead of downloading)</span></label>
+                            <input type="url" name="url[]" value="<?= htmlspecialchars($setting['url'] ?? '') ?>" class="setting-input" placeholder="https://...">
                         </div>
 
                         <?php if (!empty($slot_files[$slot])): ?>

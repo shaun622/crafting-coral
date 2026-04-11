@@ -71,7 +71,9 @@ if (is_logged_in()) {
                             </div>
                             <h3><?= htmlspecialchars($setting['title']) ?></h3>
                             <p><?= htmlspecialchars($setting['description']) ?></p>
-                            <?php if (count($files) === 0): ?>
+                            <?php if (!empty($setting['url'])): ?>
+                                <a href="<?= htmlspecialchars($setting['url']) ?>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary"><?= htmlspecialchars($setting['btn_label']) ?></a>
+                            <?php elseif (count($files) === 0): ?>
                                 <span class="btn btn-secondary" style="opacity: 0.5; cursor: default;">Coming Soon</span>
                             <?php elseif (count($files) === 1): ?>
                                 <a href="/download.php?file=<?= htmlspecialchars($slot) ?>" class="btn btn-secondary"><?= htmlspecialchars($setting['btn_label']) ?></a>

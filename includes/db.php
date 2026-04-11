@@ -78,8 +78,19 @@ function init_content_settings(): void
         title TEXT NOT NULL,
         description TEXT NOT NULL,
         btn_label TEXT NOT NULL DEFAULT "Download",
-        visible INTEGER DEFAULT 1
+        visible INTEGER DEFAULT 1,
+        url TEXT DEFAULT NULL
     )');
+
+    // Migration: add url column if upgrading from older schema
+    $cols = $db->query("PRAGMA table_info(content_settings)");
+    $has_url = false;
+    while ($col = $cols->fetchArray(SQLITE3_ASSOC)) {
+        if ($col['name'] === 'url') { $has_url = true; break; }
+    }
+    if (!$has_url) {
+        $db->exec('ALTER TABLE content_settings ADD COLUMN url TEXT DEFAULT NULL');
+    }
 
     $defaults = [
         ['infographics', 'Display Graphics', 'Infographics, statistics, images and a workshop summary for your classroom.', 'Download Pack'],
@@ -111,14 +122,15 @@ function get_content_settings(): array
     return $settings;
 }
 
-function update_content_setting(string $slot, string $title, string $description, string $btn_label, int $visible): bool
+function update_content_setting(string $slot, string $title, string $description, string $btn_label, int $visible, ?string $url = null): bool
 {
     $db = get_db();
-    $stmt = $db->prepare('UPDATE content_settings SET title = :title, description = :desc, btn_label = :btn, visible = :vis WHERE slot = :slot');
+    $stmt = $db->prepare('UPDATE content_settings SET title = :title, description = :desc, btn_label = :btn, visible = :vis, url = :url WHERE slot = :slot');
     $stmt->bindValue(':title', $title, SQLITE3_TEXT);
     $stmt->bindValue(':desc', $description, SQLITE3_TEXT);
     $stmt->bindValue(':btn', $btn_label, SQLITE3_TEXT);
     $stmt->bindValue(':vis', $visible, SQLITE3_INTEGER);
+    $stmt->bindValue(':url', $url !== null && $url !== '' ? $url : null, $url !== null && $url !== '' ? SQLITE3_TEXT : SQLITE3_NULL);
     $stmt->bindValue(':slot', $slot, SQLITE3_TEXT);
     return $stmt->execute() !== false;
 }
