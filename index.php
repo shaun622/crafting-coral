@@ -187,7 +187,7 @@ if (is_logged_in()) {
                 <h2>The Workshop in Action</h2>
                 <p class="gallery-subtitle">See how students around the world are learning about coral reefs through creativity and play.</p>
                 <div class="gallery-grid">
-                    <figure class="gallery-item gallery-item-tall">
+                    <figure class="gallery-item">
                         <img src="/assets/images/coral-interaction-1024x1024.jpg" alt="Students crafting coral" loading="lazy">
                     </figure>
                     <figure class="gallery-item">

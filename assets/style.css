@@ -616,7 +616,6 @@ h1, h2, h3, h4 {
 .gallery-grid {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
-    grid-auto-rows: 180px;
     gap: 16px;
     max-width: var(--container-width);
     margin: 0 auto;
@@ -627,16 +626,14 @@ h1, h2, h3, h4 {
     overflow: hidden;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow);
+    margin: 0;
     grid-column: span 2;
-    grid-row: span 1;
-}
-
-.gallery-item-tall {
-    grid-row: span 2;
+    aspect-ratio: 4 / 3;
 }
 
 .gallery-item-wide {
     grid-column: span 3;
+    aspect-ratio: 16 / 9;
 }
 
 .gallery-item img {
@@ -657,16 +654,12 @@ h1, h2, h3, h4 {
     }
     .gallery-grid {
         grid-template-columns: repeat(2, 1fr);
-        grid-auto-rows: 140px;
         gap: 12px;
     }
     .gallery-item,
     .gallery-item-wide {
         grid-column: span 1;
-    }
-    .gallery-item-tall {
-        grid-column: span 2;
-        grid-row: span 1;
+        aspect-ratio: 1 / 1;
     }
 }
 
