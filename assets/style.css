@@ -917,6 +917,59 @@ h1, h2, h3, h4 {
     font-size: 1.05rem;
 }
 
+/* --- Teaching Pack Gallery (Dashboard) --- */
+.teaching-gallery {
+    padding: 60px 24px 80px;
+    background: var(--color-sand);
+}
+
+.teaching-gallery h2 {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.teaching-gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    max-width: var(--container-width);
+    margin: 0 auto;
+}
+
+.teaching-gallery-grid figure {
+    margin: 0;
+    overflow: hidden;
+    border-radius: var(--radius);
+    aspect-ratio: 4 / 3;
+}
+
+.teaching-gallery-wide {
+    grid-column: span 2;
+    aspect-ratio: 16 / 9;
+}
+
+.teaching-gallery-grid figure img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.4s ease;
+}
+
+.teaching-gallery-grid figure:hover img {
+    transform: scale(1.04);
+}
+
+@media (max-width: 768px) {
+    .teaching-gallery-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .teaching-gallery-wide {
+        grid-column: span 2;
+    }
+}
+
 .dashboard-intro {
     padding: 48px 24px 0;
     background: var(--color-sand);

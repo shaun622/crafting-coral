@@ -92,6 +92,21 @@ if (is_logged_in()) {
                 </div>
             </div>
         </section>
+
+        <section class="teaching-gallery">
+            <div class="container">
+                <h2>The Workshop in Action</h2>
+                <div class="teaching-gallery-grid">
+                    <figure><img src="/assets/images/gallery/workshop-1.webp" alt="Crafting Coral workshop at Rumah Hujan" loading="lazy"></figure>
+                    <figure><img src="/assets/images/gallery/workshop-2.webp" alt="Students working on coral pods" loading="lazy"></figure>
+                    <figure><img src="/assets/images/gallery/workshop-3.webp" alt="Hands-on ceramic workshop" loading="lazy"></figure>
+                    <figure><img src="/assets/images/gallery/workshop-4.webp" alt="Workshop participants creating coral" loading="lazy"></figure>
+                    <figure class="teaching-gallery-wide"><img src="/assets/images/gallery/workshop-5.webp" alt="Crafting Coral Workshop by Sara Howard" loading="lazy"></figure>
+                    <figure><img src="/assets/images/gallery/workshop-6.webp" alt="Workshop session in progress" loading="lazy"></figure>
+                    <figure><img src="/assets/images/gallery/workshop-7.webp" alt="Finished coral pod creations" loading="lazy"></figure>
+                </div>
+            </div>
+        </section>
     </main>
 
     <?php
