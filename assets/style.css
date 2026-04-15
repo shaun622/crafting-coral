@@ -356,6 +356,56 @@ h1, h2, h3, h4 {
 }
 
 
+/* --- Workshop Info --- */
+.workshop-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin: 32px 0 40px;
+    text-align: left;
+}
+
+.workshop-info-block h3 {
+    font-size: 1.15rem;
+    color: var(--color-primary);
+    margin-bottom: 12px;
+}
+
+.workshop-info-block p {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: var(--color-text);
+}
+
+.workshop-info-block ul {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 0;
+}
+
+.workshop-info-block ul li {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: var(--color-text);
+    padding-left: 20px;
+    position: relative;
+}
+
+.workshop-info-block ul li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: var(--color-primary);
+    font-weight: 700;
+}
+
+@media (max-width: 768px) {
+    .workshop-info {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+}
+
 /* --- Sales Page: What's Inside --- */
 .whats-inside {
     padding: 100px 24px;

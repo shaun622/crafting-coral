@@ -130,6 +130,25 @@ if (is_logged_in()) {
             <div class="container">
                 <h2>Your Members Dashboard</h2>
                 <p class="preview-subtitle">Here's what you'll get instant access to after purchase</p>
+
+                <div class="workshop-info">
+                    <div class="workshop-info-block">
+                        <h3>About This Workshop</h3>
+                        <p>This Teaching Pack supports the delivery of the Crafting Coral ceramic workshop, a hands-on session combining environmental science, ceramics art, and ocean awareness for youth. Each module is designed to be self-contained and can be delivered in one school session (approximately 60–90 minutes).</p>
+                    </div>
+                    <div class="workshop-info-block">
+                        <h3>Learning Objectives</h3>
+                        <p>By the end of the session, students will be able to:</p>
+                        <ul>
+                            <li>Explain what coral is and why it is classified as an animal</li>
+                            <li>Describe the relationship between coral and zooxanthellae algae</li>
+                            <li>Identify at least two threats to coral reefs</li>
+                            <li>Understand what coral bleaching is and why it happens</li>
+                            <li>Explain why ceramic pods are used in reef restoration</li>
+                            <li>Successfully complete a 5-step ceramic CoralPod</li>
+                        </ul>
+                    </div>
+                </div>
                 <div class="preview-wrapper">
                     <div class="preview-blur">
                         <div class="preview-header">
