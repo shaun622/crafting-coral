@@ -78,8 +78,8 @@ if (is_logged_in()) {
                             <?php elseif (count($files) === 1): ?>
                                 <a href="/download.php?file=<?= htmlspecialchars($slot) ?>" class="btn btn-secondary"><?= htmlspecialchars($setting['btn_label']) ?></a>
                             <?php else: ?>
-                                <a href="/download.php?file=<?= htmlspecialchars($slot) ?>&amp;zip=1" class="btn btn-secondary"><?= htmlspecialchars($setting['btn_label']) ?></a>
                                 <p class="material-file-count"><?= count($files) ?> files included</p>
+                                <a href="/download.php?file=<?= htmlspecialchars($slot) ?>&amp;zip=1" class="btn btn-secondary"><?= htmlspecialchars($setting['btn_label']) ?></a>
                             <?php endif; ?>
                         </div>
                     <?php endforeach; ?>

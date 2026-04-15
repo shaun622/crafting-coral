@@ -1045,7 +1045,8 @@ h1, h2, h3, h4 {
 .material-file-count {
     font-size: 12px;
     color: var(--color-muted, #8a9bae);
-    margin-top: 6px;
+    margin: 0 0 8px;
+    flex-grow: 0;
 }
 
 .material-files {
