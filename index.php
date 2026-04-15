@@ -241,9 +241,9 @@ if (is_logged_in()) {
                             <p>Get instant access to all resources with a one-time payment</p>
                             <a href="/stripe-checkout.php" class="btn btn-primary btn-lg">
                                 <?php if ($price['is_launch']): ?>
-                                    Get Access &mdash; <span class="price-old"><?= $price['regular_display'] ?></span> <?= $price['display'] ?>
+                                    Unlock &mdash; <span class="price-old"><?= $price['regular_display'] ?></span> <?= $price['display'] ?>
                                 <?php else: ?>
-                                    Get Access &mdash; <?= $price['display'] ?>
+                                    Unlock &mdash; <?= $price['display'] ?>
                                 <?php endif; ?>
                             </a>
                         </div>
