@@ -149,6 +149,62 @@ if (is_logged_in()) {
                         </ul>
                     </div>
                 </div>
+
+                <div class="session-structure">
+                    <h3>Session Structure</h3>
+                    <div class="session-timeline">
+                        <div class="session-step">
+                            <span class="session-time">5 min</span>
+                            <div class="session-detail">
+                                <span class="session-section">Section 1</span>
+                                <span class="session-activity">Welcome &amp; Today's Adventure</span>
+                            </div>
+                        </div>
+                        <div class="session-step">
+                            <span class="session-time">10 min</span>
+                            <div class="session-detail">
+                                <span class="session-section">Section 2</span>
+                                <span class="session-activity">What is Coral? (Quiz + Explanation)</span>
+                            </div>
+                        </div>
+                        <div class="session-step">
+                            <span class="session-time">10 min</span>
+                            <div class="session-detail">
+                                <span class="session-section">Section 3</span>
+                                <span class="session-activity">Why Reefs Matter</span>
+                            </div>
+                        </div>
+                        <div class="session-step">
+                            <span class="session-time">10 min</span>
+                            <div class="session-detail">
+                                <span class="session-section">Section 4</span>
+                                <span class="session-activity">Threats, Bleaching &amp; Restoration</span>
+                            </div>
+                        </div>
+                        <div class="session-step">
+                            <span class="session-time">5 min</span>
+                            <div class="session-detail">
+                                <span class="session-section">Section 5</span>
+                                <span class="session-activity">What Can We Do? + Ceramics Intro</span>
+                            </div>
+                        </div>
+                        <div class="session-step session-step-highlight">
+                            <span class="session-time">30–40 min</span>
+                            <div class="session-detail">
+                                <span class="session-section">Section 6</span>
+                                <span class="session-activity">Make Your CoralPod (5 Steps)</span>
+                            </div>
+                        </div>
+                        <div class="session-step">
+                            <span class="session-time">5 min</span>
+                            <div class="session-detail">
+                                <span class="session-section">Section 7</span>
+                                <span class="session-activity">What Happens Next + Wrap Up</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="preview-wrapper">
                     <div class="preview-blur">
                         <div class="preview-header">
