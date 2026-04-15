@@ -21,6 +21,37 @@ if (!in_array($slot, $valid_slots)) {
 }
 
 $dir = __DIR__ . '/content/' . $slot;
+$download_zip = !empty($_GET['zip']);
+
+// Download all files in slot as a zip
+if ($download_zip && is_dir($dir)) {
+    $files = array_diff(scandir($dir), ['.', '..', '.htaccess']);
+    if (empty($files)) {
+        http_response_code(404);
+        $page_title = 'File Not Available — ' . SITE_NAME;
+        require_once __DIR__ . '/includes/header.php';
+        echo '<main class="auth-page"><div class="container"><div class="auth-card"><h1>Coming Soon</h1><p>This resource is being prepared and will be available shortly.</p><a href="/" class="btn btn-primary btn-full">Back to Dashboard</a></div></div></main>';
+        require_once __DIR__ . '/includes/footer.php';
+        exit;
+    }
+
+    $tmp = tempnam(sys_get_temp_dir(), 'cc_');
+    $zip = new ZipArchive();
+    $zip->open($tmp, ZipArchive::OVERWRITE);
+    foreach ($files as $f) {
+        $zip->addFile($dir . '/' . $f, $f);
+    }
+    $zip->close();
+
+    $zip_name = str_replace('-', '_', $slot) . '_files.zip';
+    header('Content-Type: application/zip');
+    header('Content-Disposition: attachment; filename="' . $zip_name . '"');
+    header('Content-Length: ' . filesize($tmp));
+    header('Cache-Control: no-store, no-cache, must-revalidate');
+    readfile($tmp);
+    unlink($tmp);
+    exit;
+}
 
 // If no specific file requested, check if there's only one file in the slot
 if (empty($filename) && is_dir($dir)) {
