@@ -249,6 +249,8 @@ if (is_logged_in()) {
                         </div>
                     </div>
                 </div>
+
+                <p class="materials-note"><strong>Additional materials required for the workshop:</strong> Clay (400g per student), pencils/wooden tools (1 per student), wipeable table, projector/screen for slides, VR headset (optional).</p>
             </div>
         </section>
 
