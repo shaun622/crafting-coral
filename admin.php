@@ -153,7 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 // --- Get data ---
 if ($is_admin) {
     $db = get_db();
-    $results = $db->query('SELECT email, stripe_customer_id, paid_at, created_at FROM members ORDER BY created_at DESC');
+    $results = $db->query('SELECT email, stripe_customer_id, paid_at, created_at, plan, amount_paid FROM members ORDER BY created_at DESC');
     $members = [];
     while ($row = $results->fetchArray(SQLITE3_ASSOC)) {
         $members[] = $row;
@@ -358,8 +358,12 @@ if ($is_admin) {
                 <div class="stat-value"><?= count(array_filter($members, fn($m) => $m['stripe_customer_id'] !== 'test_customer' && $m['stripe_customer_id'] !== 'manual')) ?></div>
                 <div class="stat-label">Paid Members</div>
             </div>
+            <?php
+            $paid_members = array_filter($members, fn($m) => str_starts_with((string)($m['stripe_customer_id'] ?? ''), 'cus_'));
+            $revenue_pence = array_sum(array_map(fn($m) => (int) ($m['amount_paid'] ?? 0), $paid_members));
+            ?>
             <div class="stat">
-                <div class="stat-value">&pound;<?= count(array_filter($members, fn($m) => $m['stripe_customer_id'] !== 'test_customer' && $m['stripe_customer_id'] !== 'manual')) * 100 ?></div>
+                <div class="stat-value">&pound;<?= number_format($revenue_pence / 100, 0) ?></div>
                 <div class="stat-label">Revenue</div>
             </div>
             <div class="stat">
@@ -387,6 +391,7 @@ if ($is_admin) {
                             <tr>
                                 <th>Email</th>
                                 <th>Type</th>
+                                <th>Plan</th>
                                 <th>Date</th>
                                 <th></th>
                             </tr>
@@ -400,6 +405,17 @@ if ($is_admin) {
                                             <span class="tag tag-manual">Manual</span>
                                         <?php else: ?>
                                             <span class="tag tag-paid">Paid</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td style="font-size: 13px;">
+                                        <?php
+                                        $plan = $m['plan'] ?? 'lifetime';
+                                        $plan_label = $plan === 'annual' ? '1 Year' : 'Lifetime';
+                                        $amount = (int) ($m['amount_paid'] ?? 0);
+                                        ?>
+                                        <span style="color: var(--text);"><?= $plan_label ?></span>
+                                        <?php if ($amount > 0): ?>
+                                            <span style="color: var(--muted);">— £<?= number_format($amount / 100, 0) ?></span>
                                         <?php endif; ?>
                                     </td>
                                     <td style="color: var(--muted); font-size: 13px;"><?= date('j M Y', strtotime($m['paid_at'])) ?></td>

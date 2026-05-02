@@ -30,8 +30,22 @@ if ($event->type === 'checkout.session.completed') {
     $customer_id = $session->customer ?? '';
     $payment_intent = $session->payment_intent ?? '';
 
+    // Pull plan/amount from metadata set in stripe-checkout.php
+    $metadata = $session->metadata ?? null;
+    $plan = 'lifetime';
+    $amount_paid = (int) ($session->amount_total ?? 0);
+    if ($metadata) {
+        $meta_plan = $metadata->plan ?? '';
+        if (in_array($meta_plan, ['annual', 'lifetime'], true)) {
+            $plan = $meta_plan;
+        }
+        if (!empty($metadata->amount_paid)) {
+            $amount_paid = (int) $metadata->amount_paid;
+        }
+    }
+
     if (!empty($email)) {
-        create_member($email, $customer_id, $payment_intent);
+        create_member($email, $customer_id, $payment_intent, $plan, $amount_paid);
     }
 }
 

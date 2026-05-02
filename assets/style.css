@@ -838,15 +838,61 @@ h1, h2, h3, h4 {
     background: var(--color-white);
 }
 
-.pricing-card {
-    max-width: 440px;
-    margin: 0 auto;
+.pricing-heading {
     text-align: center;
-    padding: 48px 40px;
+    margin-bottom: 12px;
+}
+
+.pricing-sub {
+    text-align: center;
+    color: var(--color-text-light);
+    margin-bottom: 48px;
+    font-size: 1.05rem;
+}
+
+.pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+    max-width: 880px;
+    margin: 0 auto;
+    align-items: stretch;
+}
+
+.pricing-card {
+    text-align: center;
+    padding: 48px 36px;
     border-radius: var(--radius-lg);
     background: var(--color-deep);
     color: var(--color-white);
     box-shadow: var(--shadow-lg);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.pricing-card-featured {
+    background: linear-gradient(165deg, #1a5570 0%, #0c3547 100%);
+    transform: scale(1.02);
+    box-shadow: 0 12px 60px rgba(12, 53, 71, 0.25);
+}
+
+.pricing-launch-tag-featured {
+    background: var(--color-accent, #f4a261) !important;
+    color: var(--color-deep) !important;
+}
+
+.pricing-card .btn {
+    margin-top: auto;
+}
+
+@media (max-width: 768px) {
+    .pricing-grid {
+        grid-template-columns: 1fr;
+    }
+    .pricing-card-featured {
+        transform: none;
+    }
 }
 
 .pricing-label {

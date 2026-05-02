@@ -15,8 +15,27 @@ function get_db(): SQLite3
         paid_at DATETIME NOT NULL,
         magic_token TEXT,
         magic_token_expires DATETIME,
+        plan TEXT DEFAULT "lifetime",
+        amount_paid INTEGER DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )');
+
+    // Migration: add plan/amount_paid columns if upgrading
+    $cols = $db->query("PRAGMA table_info(members)");
+    $existing = [];
+    while ($col = $cols->fetchArray(SQLITE3_ASSOC)) {
+        $existing[] = $col['name'];
+    }
+    if (!in_array('plan', $existing)) {
+        $db->exec('ALTER TABLE members ADD COLUMN plan TEXT DEFAULT "lifetime"');
+        // All pre-existing members were grandfathered in at the original launch
+        // price as lifetime access, so leave them as lifetime.
+        $db->exec("UPDATE members SET plan = 'lifetime' WHERE plan IS NULL OR plan = ''");
+    }
+    if (!in_array('amount_paid', $existing)) {
+        $db->exec('ALTER TABLE members ADD COLUMN amount_paid INTEGER DEFAULT 0');
+    }
+
     return $db;
 }
 
@@ -29,14 +48,16 @@ function get_member_by_email(string $email): array|false
     return $result->fetchArray(SQLITE3_ASSOC) ?: false;
 }
 
-function create_member(string $email, string $stripe_customer_id, string $stripe_payment_id): bool
+function create_member(string $email, string $stripe_customer_id, string $stripe_payment_id, string $plan = 'lifetime', int $amount_paid = 0): bool
 {
     $db = get_db();
-    $stmt = $db->prepare('INSERT OR IGNORE INTO members (email, stripe_customer_id, stripe_payment_id, paid_at) VALUES (:email, :cid, :pid, :paid_at)');
+    $stmt = $db->prepare('INSERT OR IGNORE INTO members (email, stripe_customer_id, stripe_payment_id, paid_at, plan, amount_paid) VALUES (:email, :cid, :pid, :paid_at, :plan, :amount)');
     $stmt->bindValue(':email', strtolower(trim($email)), SQLITE3_TEXT);
     $stmt->bindValue(':cid', $stripe_customer_id, SQLITE3_TEXT);
     $stmt->bindValue(':pid', $stripe_payment_id, SQLITE3_TEXT);
     $stmt->bindValue(':paid_at', date('Y-m-d H:i:s'), SQLITE3_TEXT);
+    $stmt->bindValue(':plan', $plan, SQLITE3_TEXT);
+    $stmt->bindValue(':amount', $amount_paid, SQLITE3_INTEGER);
     return $stmt->execute() !== false;
 }
 
@@ -137,39 +158,66 @@ function update_content_setting(string $slot, string $title, string $description
 
 // --- Pricing ---
 
-function get_paid_member_count(): int
+function get_paid_member_count(?string $plan = null): int
 {
     $db = get_db();
-    // Only count real Stripe-paid members (exclude manual and test entries)
-    $result = $db->query("SELECT COUNT(*) AS c FROM members WHERE stripe_customer_id LIKE 'cus_%'");
-    $row = $result->fetchArray(SQLITE3_ASSOC);
+    if ($plan === null) {
+        $stmt = $db->prepare("SELECT COUNT(*) AS c FROM members WHERE stripe_customer_id LIKE 'cus_%'");
+    } else {
+        $stmt = $db->prepare("SELECT COUNT(*) AS c FROM members WHERE stripe_customer_id LIKE 'cus_%' AND plan = :plan");
+        $stmt->bindValue(':plan', $plan, SQLITE3_TEXT);
+    }
+    $row = $stmt->execute()->fetchArray(SQLITE3_ASSOC);
     return (int) ($row['c'] ?? 0);
 }
 
-function get_current_price(): array
+function format_price(int $pence): string
 {
-    $regular_amount = REGULAR_PRICE;
-    $regular_display = '£' . number_format($regular_amount / 100, 0);
+    return '£' . number_format($pence / 100, 0);
+}
+
+/**
+ * Returns array of pricing tiers. Annual gets the launch discount until
+ * LAUNCH_OFFER_LIMIT annual buyers are reached.
+ */
+function get_pricing_options(): array
+{
+    // Annual
+    $annual = [
+        'plan' => 'annual',
+        'name' => 'Digital Teaching Pack',
+        'access' => '1 Year Access',
+        'amount' => ANNUAL_PRICE,
+        'display' => format_price(ANNUAL_PRICE),
+        'is_launch' => false,
+    ];
 
     if (LAUNCH_OFFER_ENABLED) {
-        $paid = get_paid_member_count();
-        $spots_left = LAUNCH_OFFER_LIMIT - $paid;
+        $sold = get_paid_member_count('annual');
+        $spots_left = LAUNCH_OFFER_LIMIT - $sold;
         if ($spots_left > 0) {
-            return [
-                'amount' => LAUNCH_OFFER_PRICE,
-                'display' => '£' . number_format(LAUNCH_OFFER_PRICE / 100, 0),
-                'is_launch' => true,
-                'spots_left' => $spots_left,
-                'spots_total' => LAUNCH_OFFER_LIMIT,
-                'regular_amount' => $regular_amount,
-                'regular_display' => $regular_display,
-            ];
+            $annual['amount'] = ANNUAL_LAUNCH_PRICE;
+            $annual['display'] = format_price(ANNUAL_LAUNCH_PRICE);
+            $annual['is_launch'] = true;
+            $annual['spots_left'] = $spots_left;
+            $annual['spots_total'] = LAUNCH_OFFER_LIMIT;
+            $annual['regular_amount'] = ANNUAL_PRICE;
+            $annual['regular_display'] = format_price(ANNUAL_PRICE);
         }
     }
 
-    return [
-        'amount' => $regular_amount,
-        'display' => $regular_display,
+    // Lifetime
+    $lifetime = [
+        'plan' => 'lifetime',
+        'name' => 'Digital Teaching Pack',
+        'access' => 'Lifetime Access',
+        'amount' => LIFETIME_PRICE,
+        'display' => format_price(LIFETIME_PRICE),
         'is_launch' => false,
+    ];
+
+    return [
+        'annual' => $annual,
+        'lifetime' => $lifetime,
     ];
 }

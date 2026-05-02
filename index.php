@@ -108,7 +108,9 @@ if (is_logged_in()) {
 } else {
     // Sales page view
     $page_title = 'Bring Coral Reef Conservation Into Your Classroom — ' . SITE_NAME;
-    $price = get_current_price();
+    $pricing = get_pricing_options();
+    $annual = $pricing['annual'];
+    $lifetime = $pricing['lifetime'];
     require_once __DIR__ . '/includes/header.php';
     ?>
 
@@ -116,22 +118,16 @@ if (is_logged_in()) {
         <section class="hero">
             <div class="hero-overlay"></div>
             <div class="container hero-content">
-                <?php if ($price['is_launch']): ?>
+                <?php if ($annual['is_launch']): ?>
                     <div class="launch-badge">
                         <span class="launch-dot"></span>
-                        Launch offer — <?= $price['spots_left'] ?> of <?= $price['spots_total'] ?> spots left at <?= $price['display'] ?>
+                        Launch offer — <?= $annual['spots_left'] ?> of <?= $annual['spots_total'] ?> annual spots left at <?= $annual['display'] ?>
                     </div>
                 <?php endif; ?>
                 <h1>Bring Coral Reef Conservation Into Your Classroom</h1>
                 <p class="hero-sub">A hands-on teaching pack for educators who want to raise the next generation of ocean stewards.</p>
-                <a href="/stripe-checkout.php" class="btn btn-primary btn-lg">
-                    <?php if ($price['is_launch']): ?>
-                        Get the Teaching Pack &mdash; <span class="price-old"><?= $price['regular_display'] ?></span> <?= $price['display'] ?>
-                    <?php else: ?>
-                        Get the Teaching Pack &mdash; <?= $price['display'] ?>
-                    <?php endif; ?>
-                </a>
-                <p class="hero-note">One-time payment. Lifetime access. Updated materials included.</p>
+                <a href="#pricing" class="btn btn-primary btn-lg">View Pricing</a>
+                <p class="hero-note">Choose 1 year or lifetime access. Updated materials included.</p>
             </div>
         </section>
 
@@ -238,14 +234,8 @@ if (is_logged_in()) {
                         <div class="preview-overlay-content">
                             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 16px; opacity: 0.9;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                             <h3>Unlock Your Teaching Pack</h3>
-                            <p>Get instant access to all resources with a one-time payment</p>
-                            <a href="/stripe-checkout.php" class="btn btn-primary btn-lg">
-                                <?php if ($price['is_launch']): ?>
-                                    Unlock &mdash; <span class="price-old"><?= $price['regular_display'] ?></span> <?= $price['display'] ?>
-                                <?php else: ?>
-                                    Unlock &mdash; <?= $price['display'] ?>
-                                <?php endif; ?>
-                            </a>
+                            <p>Choose 1 year or lifetime access</p>
+                            <a href="#pricing" class="btn btn-primary btn-lg">View Pricing</a>
                         </div>
                     </div>
                 </div>
@@ -294,28 +284,50 @@ if (is_logged_in()) {
             </div>
         </section>
 
-        <section class="pricing">
+        <section class="pricing" id="pricing">
             <div class="container">
-                <div class="pricing-card<?= $price['is_launch'] ? ' pricing-card-launch' : '' ?>">
-                    <?php if ($price['is_launch']): ?>
-                        <span class="pricing-launch-tag">Launch offer &mdash; <?= $price['spots_left'] ?> of <?= $price['spots_total'] ?> spots left</span>
-                    <?php endif; ?>
-                    <span class="pricing-label">Teaching Pack</span>
-                    <div class="pricing-amount">
-                        <?php if ($price['is_launch']): ?>
-                            <span class="price-old"><?= $price['regular_display'] ?></span> <?= $price['display'] ?>
-                        <?php else: ?>
-                            <?= $price['display'] ?>
+                <h2 class="pricing-heading">Choose Your Access</h2>
+                <p class="pricing-sub">Both plans include every resource — pick the access that suits you.</p>
+                <div class="pricing-grid">
+
+                    <!-- Annual -->
+                    <div class="pricing-card<?= $annual['is_launch'] ? ' pricing-card-launch' : '' ?>">
+                        <?php if ($annual['is_launch']): ?>
+                            <span class="pricing-launch-tag">Launch offer &mdash; <?= $annual['spots_left'] ?> of <?= $annual['spots_total'] ?> spots left</span>
                         <?php endif; ?>
+                        <span class="pricing-label">Digital Teaching Pack</span>
+                        <div class="pricing-amount">
+                            <?php if ($annual['is_launch']): ?>
+                                <span class="price-old"><?= $annual['regular_display'] ?></span> <?= $annual['display'] ?>
+                            <?php else: ?>
+                                <?= $annual['display'] ?>
+                            <?php endif; ?>
+                        </div>
+                        <p class="pricing-detail">1 Year Access</p>
+                        <ul class="pricing-features">
+                            <li>All five resources included</li>
+                            <li>Updates released during your access year</li>
+                            <li>Instant access after payment</li>
+                            <li>Renewable annually</li>
+                        </ul>
+                        <a href="/stripe-checkout.php?plan=annual" class="btn btn-primary btn-lg">Get 1 Year Access</a>
                     </div>
-                    <p class="pricing-detail">Lifetime Access</p>
-                    <ul class="pricing-features">
-                        <li>One-time purchase — no subscriptions</li>
-                        <li>All five resources included</li>
-                        <li>Future updates included free</li>
-                        <li>Instant access after payment</li>
-                    </ul>
-                    <a href="/stripe-checkout.php" class="btn btn-primary btn-lg">Get the Teaching Pack</a>
+
+                    <!-- Lifetime -->
+                    <div class="pricing-card pricing-card-featured">
+                        <span class="pricing-launch-tag pricing-launch-tag-featured">Best Value</span>
+                        <span class="pricing-label">Digital Teaching Pack</span>
+                        <div class="pricing-amount"><?= $lifetime['display'] ?></div>
+                        <p class="pricing-detail">Lifetime Access</p>
+                        <ul class="pricing-features">
+                            <li>All five resources included</li>
+                            <li>All future updates included free</li>
+                            <li>Instant access after payment</li>
+                            <li>One-time payment — never expires</li>
+                        </ul>
+                        <a href="/stripe-checkout.php?plan=lifetime" class="btn btn-primary btn-lg">Get Lifetime Access</a>
+                    </div>
+
                 </div>
             </div>
         </section>
