@@ -42,6 +42,13 @@ foreach ($valid_slots as $s) {
 if (is_logged_in()) {
     // Dashboard view
     $page_title = 'Your Teaching Pack — ' . SITE_NAME;
+    $member = get_member_by_email(get_member_email());
+    $member_plan = $member['plan'] ?? 'lifetime';
+    $member_expires = $member['expires_at'] ?? null;
+    $days_left = null;
+    if ($member_expires) {
+        $days_left = max(0, (int) floor((strtotime($member_expires) - time()) / 86400));
+    }
     require_once __DIR__ . '/includes/header.php';
     ?>
 
@@ -50,6 +57,23 @@ if (is_logged_in()) {
             <div class="container">
                 <h1>Your Teaching Pack</h1>
                 <p>Everything you need to run a Crafting Coral workshop. Materials are updated periodically — you'll always have the latest versions here.</p>
+
+                <div class="access-banner">
+                    <?php if ($member_plan === 'annual' && $member_expires): ?>
+                        <div class="access-banner-info">
+                            <strong>1 Year Access</strong>
+                            <span>Renews on <?= date('j M Y', strtotime($member_expires)) ?> &middot; <?= $days_left ?> day<?= $days_left === 1 ? '' : 's' ?> left</span>
+                        </div>
+                        <?php if ($days_left <= 30): ?>
+                            <a href="/stripe-checkout.php?plan=annual&amp;renew=1&amp;email=<?= urlencode(get_member_email()) ?>" class="btn btn-secondary btn-sm">Renew Now</a>
+                        <?php endif; ?>
+                    <?php else: ?>
+                        <div class="access-banner-info">
+                            <strong>Lifetime Access</strong>
+                            <span>Permanent access — no expiry</span>
+                        </div>
+                    <?php endif; ?>
+                </div>
             </div>
         </section>
 

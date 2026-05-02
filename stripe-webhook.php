@@ -45,7 +45,7 @@ if ($event->type === 'checkout.session.completed') {
     }
 
     if (!empty($email)) {
-        create_member($email, $customer_id, $payment_intent, $plan, $amount_paid);
+        record_payment($email, $customer_id, $payment_intent, $plan, $amount_paid);
     }
 }
 

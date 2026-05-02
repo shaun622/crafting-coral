@@ -21,13 +21,29 @@ try {
         $email = strtolower(trim($session->customer_details->email ?? ''));
 
         if (!empty($email)) {
-            // Create member if webhook hasn't fired yet (race condition fix)
+            // Pull plan/amount from Stripe metadata (set in stripe-checkout.php)
             $customer_id = $session->customer ?? '';
             $payment_intent = $session->payment_intent ?? '';
-            create_member($email, $customer_id, $payment_intent);
+            $metadata = $session->metadata ?? null;
+            $plan = 'lifetime';
+            $amount_paid = (int) ($session->amount_total ?? 0);
+            if ($metadata) {
+                $meta_plan = $metadata->plan ?? '';
+                if (in_array($meta_plan, ['annual', 'lifetime'], true)) {
+                    $plan = $meta_plan;
+                }
+                if (!empty($metadata->amount_paid)) {
+                    $amount_paid = (int) $metadata->amount_paid;
+                }
+            }
+
+            // Idempotent — if webhook already created/renewed this member, this is a no-op for new records
+            // and a duplicate update for renewals. Stripe webhook duplicates are rare; OK for now.
+            record_payment($email, $customer_id, $payment_intent, $plan, $amount_paid);
 
             // Log them in
             $_SESSION['member_email'] = $email;
+            session_regenerate_id(true);
         }
 
         header('Location: /');

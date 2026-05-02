@@ -15,6 +15,20 @@ function require_auth(): void
         header('Location: /login.php');
         exit;
     }
+
+    // Check membership is still active (handles expired annual access)
+    require_once __DIR__ . '/db.php';
+    $email = $_SESSION['member_email'];
+    if (!is_member_active($email)) {
+        // Save the expired email for the login page so it can offer renewal
+        $expired = $email;
+        $_SESSION = [];
+        session_regenerate_id(true);
+        // Re-open a fresh session and stash a flash message
+        $_SESSION['expired_email'] = $expired;
+        header('Location: /login.php?expired=1');
+        exit;
+    }
 }
 
 function get_member_email(): ?string

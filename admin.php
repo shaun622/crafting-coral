@@ -153,7 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 // --- Get data ---
 if ($is_admin) {
     $db = get_db();
-    $results = $db->query('SELECT email, stripe_customer_id, paid_at, created_at, plan, amount_paid FROM members ORDER BY created_at DESC');
+    $results = $db->query('SELECT email, stripe_customer_id, paid_at, created_at, plan, amount_paid, expires_at FROM members ORDER BY created_at DESC');
     $members = [];
     while ($row = $results->fetchArray(SQLITE3_ASSOC)) {
         $members[] = $row;
@@ -412,10 +412,19 @@ if ($is_admin) {
                                         $plan = $m['plan'] ?? 'lifetime';
                                         $plan_label = $plan === 'annual' ? '1 Year' : 'Lifetime';
                                         $amount = (int) ($m['amount_paid'] ?? 0);
+                                        $expires_at = $m['expires_at'] ?? null;
+                                        $expired = $expires_at && strtotime($expires_at) < time();
                                         ?>
-                                        <span style="color: var(--text);"><?= $plan_label ?></span>
-                                        <?php if ($amount > 0): ?>
-                                            <span style="color: var(--muted);">— £<?= number_format($amount / 100, 0) ?></span>
+                                        <div>
+                                            <span style="color: var(--text);"><?= $plan_label ?></span>
+                                            <?php if ($amount > 0): ?>
+                                                <span style="color: var(--muted);">— £<?= number_format($amount / 100, 0) ?></span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php if ($expires_at): ?>
+                                            <div style="font-size: 11px; color: <?= $expired ? 'var(--danger, #c0392b)' : 'var(--muted)' ?>;">
+                                                <?= $expired ? 'Expired ' : 'Expires ' ?><?= date('j M Y', strtotime($expires_at)) ?>
+                                            </div>
                                         <?php endif; ?>
                                     </td>
                                     <td style="color: var(--muted); font-size: 13px;"><?= date('j M Y', strtotime($m['paid_at'])) ?></td>

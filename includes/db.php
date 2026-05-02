@@ -17,10 +17,11 @@ function get_db(): SQLite3
         magic_token_expires DATETIME,
         plan TEXT DEFAULT "lifetime",
         amount_paid INTEGER DEFAULT 0,
+        expires_at DATETIME DEFAULT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )');
 
-    // Migration: add plan/amount_paid columns if upgrading
+    // Migration: add new columns when upgrading from older schema
     $cols = $db->query("PRAGMA table_info(members)");
     $existing = [];
     while ($col = $cols->fetchArray(SQLITE3_ASSOC)) {
@@ -34,6 +35,10 @@ function get_db(): SQLite3
     }
     if (!in_array('amount_paid', $existing)) {
         $db->exec('ALTER TABLE members ADD COLUMN amount_paid INTEGER DEFAULT 0');
+    }
+    if (!in_array('expires_at', $existing)) {
+        $db->exec('ALTER TABLE members ADD COLUMN expires_at DATETIME DEFAULT NULL');
+        // Leave existing rows with NULL expires_at — they're all lifetime now.
     }
 
     return $db;
@@ -51,42 +56,95 @@ function get_member_by_email(string $email): array|false
 function create_member(string $email, string $stripe_customer_id, string $stripe_payment_id, string $plan = 'lifetime', int $amount_paid = 0): bool
 {
     $db = get_db();
-    $stmt = $db->prepare('INSERT OR IGNORE INTO members (email, stripe_customer_id, stripe_payment_id, paid_at, plan, amount_paid) VALUES (:email, :cid, :pid, :paid_at, :plan, :amount)');
+    // Annual: 1 year from now. Lifetime/manual: NULL (never expires).
+    $expires_at = $plan === 'annual' ? date('Y-m-d H:i:s', strtotime('+1 year')) : null;
+
+    $stmt = $db->prepare('INSERT OR IGNORE INTO members (email, stripe_customer_id, stripe_payment_id, paid_at, plan, amount_paid, expires_at) VALUES (:email, :cid, :pid, :paid_at, :plan, :amount, :expires_at)');
     $stmt->bindValue(':email', strtolower(trim($email)), SQLITE3_TEXT);
     $stmt->bindValue(':cid', $stripe_customer_id, SQLITE3_TEXT);
     $stmt->bindValue(':pid', $stripe_payment_id, SQLITE3_TEXT);
     $stmt->bindValue(':paid_at', date('Y-m-d H:i:s'), SQLITE3_TEXT);
     $stmt->bindValue(':plan', $plan, SQLITE3_TEXT);
     $stmt->bindValue(':amount', $amount_paid, SQLITE3_INTEGER);
+    $stmt->bindValue(':expires_at', $expires_at, $expires_at === null ? SQLITE3_NULL : SQLITE3_TEXT);
     return $stmt->execute() !== false;
 }
 
-function set_magic_token(string $email, string $token, string $expires): bool
+/**
+ * Handle a Stripe checkout for an email that may already be a member.
+ * - New email: creates the member with the given plan/amount.
+ * - Existing annual member: extends expires_at by 1 year (from current expiry, or now if expired).
+ * - Existing lifetime member: no-op (they already have permanent access).
+ * - Upgrading annual -> lifetime: switches plan to lifetime, NULLs expires_at.
+ */
+function record_payment(string $email, string $stripe_customer_id, string $stripe_payment_id, string $plan, int $amount_paid): void
 {
     $db = get_db();
-    $stmt = $db->prepare('UPDATE members SET magic_token = :token, magic_token_expires = :expires WHERE email = :email');
-    $stmt->bindValue(':token', $token, SQLITE3_TEXT);
-    $stmt->bindValue(':expires', $expires, SQLITE3_TEXT);
+    $existing = get_member_by_email($email);
+
+    if (!$existing) {
+        create_member($email, $stripe_customer_id, $stripe_payment_id, $plan, $amount_paid);
+        return;
+    }
+
+    // Idempotency: if this exact payment has already been processed for this
+    // member, skip. Prevents the success page + webhook double-extending an
+    // annual renewal.
+    if (!empty($stripe_payment_id) && ($existing['stripe_payment_id'] ?? '') === $stripe_payment_id) {
+        return;
+    }
+
+    // Existing lifetime member — nothing to extend, just record the latest payment ref.
+    if (($existing['plan'] ?? 'lifetime') === 'lifetime' && $plan === 'annual') {
+        // They already have lifetime — no action needed (refund manually if needed).
+        return;
+    }
+
+    // Upgrade annual -> lifetime
+    if ($plan === 'lifetime') {
+        $stmt = $db->prepare('UPDATE members SET plan = "lifetime", expires_at = NULL, stripe_customer_id = :cid, stripe_payment_id = :pid, amount_paid = amount_paid + :amount, paid_at = :paid_at WHERE email = :email');
+        $stmt->bindValue(':cid', $stripe_customer_id, SQLITE3_TEXT);
+        $stmt->bindValue(':pid', $stripe_payment_id, SQLITE3_TEXT);
+        $stmt->bindValue(':amount', $amount_paid, SQLITE3_INTEGER);
+        $stmt->bindValue(':paid_at', date('Y-m-d H:i:s'), SQLITE3_TEXT);
+        $stmt->bindValue(':email', strtolower(trim($email)), SQLITE3_TEXT);
+        $stmt->execute();
+        return;
+    }
+
+    // Annual renewal: extend from later of (current expiry, now) by 1 year.
+    $base_ts = strtotime($existing['expires_at'] ?? 'now');
+    if ($base_ts === false || $base_ts < time()) {
+        $base_ts = time();
+    }
+    $new_expiry = date('Y-m-d H:i:s', strtotime('+1 year', $base_ts));
+
+    $stmt = $db->prepare('UPDATE members SET expires_at = :exp, stripe_customer_id = :cid, stripe_payment_id = :pid, amount_paid = amount_paid + :amount, paid_at = :paid_at WHERE email = :email');
+    $stmt->bindValue(':exp', $new_expiry, SQLITE3_TEXT);
+    $stmt->bindValue(':cid', $stripe_customer_id, SQLITE3_TEXT);
+    $stmt->bindValue(':pid', $stripe_payment_id, SQLITE3_TEXT);
+    $stmt->bindValue(':amount', $amount_paid, SQLITE3_INTEGER);
+    $stmt->bindValue(':paid_at', date('Y-m-d H:i:s'), SQLITE3_TEXT);
     $stmt->bindValue(':email', strtolower(trim($email)), SQLITE3_TEXT);
-    return $stmt->execute() !== false;
+    $stmt->execute();
 }
 
-function get_member_by_token(string $token): array|false
+/**
+ * Returns one of: 'active', 'expired', 'unknown'.
+ * Lifetime members and rows with NULL expires_at are always active.
+ */
+function get_member_status(string $email): string
 {
-    $db = get_db();
-    $stmt = $db->prepare('SELECT * FROM members WHERE magic_token = :token AND magic_token_expires > :now');
-    $stmt->bindValue(':token', $token, SQLITE3_TEXT);
-    $stmt->bindValue(':now', date('Y-m-d H:i:s'), SQLITE3_TEXT);
-    $result = $stmt->execute();
-    return $result->fetchArray(SQLITE3_ASSOC) ?: false;
+    $member = get_member_by_email($email);
+    if (!$member) return 'unknown';
+    $expires = $member['expires_at'] ?? null;
+    if (empty($expires)) return 'active';
+    return strtotime($expires) > time() ? 'active' : 'expired';
 }
 
-function clear_magic_token(string $email): bool
+function is_member_active(string $email): bool
 {
-    $db = get_db();
-    $stmt = $db->prepare('UPDATE members SET magic_token = NULL, magic_token_expires = NULL WHERE email = :email');
-    $stmt->bindValue(':email', strtolower(trim($email)), SQLITE3_TEXT);
-    return $stmt->execute() !== false;
+    return get_member_status($email) === 'active';
 }
 
 // --- Content Settings ---
