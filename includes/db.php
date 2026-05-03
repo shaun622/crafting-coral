@@ -40,6 +40,9 @@ function get_db(): SQLite3
         $db->exec('ALTER TABLE members ADD COLUMN expires_at DATETIME DEFAULT NULL');
         // Leave existing rows with NULL expires_at — they're all lifetime now.
     }
+    if (!in_array('password_hash', $existing)) {
+        $db->exec('ALTER TABLE members ADD COLUMN password_hash TEXT DEFAULT NULL');
+    }
 
     return $db;
 }
@@ -145,6 +148,59 @@ function get_member_status(string $email): string
 function is_member_active(string $email): bool
 {
     return get_member_status($email) === 'active';
+}
+
+// --- Passwords ---
+
+function set_member_password(string $email, string $plain_password): bool
+{
+    $db = get_db();
+    $hash = password_hash($plain_password, PASSWORD_DEFAULT);
+    $stmt = $db->prepare('UPDATE members SET password_hash = :hash, magic_token = NULL, magic_token_expires = NULL WHERE email = :email');
+    $stmt->bindValue(':hash', $hash, SQLITE3_TEXT);
+    $stmt->bindValue(':email', strtolower(trim($email)), SQLITE3_TEXT);
+    return $stmt->execute() !== false;
+}
+
+function verify_member_password(string $email, string $plain_password): bool
+{
+    $member = get_member_by_email($email);
+    if (!$member || empty($member['password_hash'])) return false;
+    return password_verify($plain_password, $member['password_hash']);
+}
+
+function member_has_password(string $email): bool
+{
+    $member = get_member_by_email($email);
+    return $member && !empty($member['password_hash']);
+}
+
+/**
+ * Generate a one-time setup token a member can use to set their password.
+ * Used after Stripe checkout (auto) and from admin "Reset password" (manual share).
+ * Returns the token string (caller is responsible for sharing it).
+ */
+function create_setup_token(string $email, int $ttl_seconds = 86400): ?string
+{
+    if (!get_member_by_email($email)) return null;
+    $token = bin2hex(random_bytes(24));
+    $expires = date('Y-m-d H:i:s', time() + $ttl_seconds);
+    $db = get_db();
+    $stmt = $db->prepare('UPDATE members SET magic_token = :tok, magic_token_expires = :exp WHERE email = :email');
+    $stmt->bindValue(':tok', $token, SQLITE3_TEXT);
+    $stmt->bindValue(':exp', $expires, SQLITE3_TEXT);
+    $stmt->bindValue(':email', strtolower(trim($email)), SQLITE3_TEXT);
+    $stmt->execute();
+    return $token;
+}
+
+function get_member_by_setup_token(string $token): array|false
+{
+    $db = get_db();
+    $stmt = $db->prepare('SELECT * FROM members WHERE magic_token = :tok AND magic_token_expires > :now');
+    $stmt->bindValue(':tok', $token, SQLITE3_TEXT);
+    $stmt->bindValue(':now', date('Y-m-d H:i:s'), SQLITE3_TEXT);
+    return $stmt->execute()->fetchArray(SQLITE3_ASSOC) ?: false;
 }
 
 // --- Content Settings ---

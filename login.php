@@ -11,7 +11,9 @@ if (is_logged_in()) {
 
 $error = null;
 $expired_email = null;
+$no_password_email = null;
 $csrf_token = generate_csrf_token();
+$prefill_email = '';
 
 // Pick up expired-access flash from require_auth()
 if (!empty($_SESSION['expired_email'])) {
@@ -21,20 +23,29 @@ if (!empty($_SESSION['expired_email'])) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = strtolower(trim($_POST['email'] ?? ''));
+    $password = $_POST['password'] ?? '';
     $token = $_POST['csrf_token'] ?? '';
+    $prefill_email = $email;
 
     if (!verify_csrf_token($token)) {
         $error = 'Session expired. Please try again.';
     } elseif (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = 'Please enter a valid email address.';
+    } elseif (empty($password)) {
+        $error = 'Please enter your password.';
     } else {
         $status = get_member_status($email);
         if ($status === 'unknown') {
             $error = 'No account found with that email address.';
         } elseif ($status === 'expired') {
             $expired_email = $email;
+        } elseif (!member_has_password($email)) {
+            // Active member but never set a password — admin needs to send a setup link
+            $no_password_email = $email;
+        } elseif (!verify_member_password($email, $password)) {
+            $error = 'Incorrect password. Please try again.';
         } else {
-            // Active — log them in.
+            // Active + password verified
             $_SESSION['member_email'] = $email;
             session_regenerate_id(true);
             header('Location: /');
@@ -65,9 +76,16 @@ require_once __DIR__ . '/includes/header.php';
                 </div>
 
                 <p class="auth-footer-link"><a href="/login.php">Use a different email</a></p>
+
+            <?php elseif ($no_password_email): ?>
+                <h1>Set Up Required</h1>
+                <p>Your account for <strong><?= htmlspecialchars($no_password_email) ?></strong> hasn't been set up yet.</p>
+                <p>Please contact <a href="mailto:hello@craftingcoral.com">hello@craftingcoral.com</a> and we'll send you a setup link to create your password.</p>
+                <p class="auth-footer-link"><a href="/login.php">Use a different email</a></p>
+
             <?php else: ?>
                 <h1>Welcome Back</h1>
-                <p>Enter the email you used to purchase the teaching pack.</p>
+                <p>Log in with the email and password from your purchase.</p>
 
                 <?php if ($error): ?>
                     <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
@@ -77,11 +95,16 @@ require_once __DIR__ . '/includes/header.php';
                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                     <div class="form-group">
                         <label for="email">Email address</label>
-                        <input type="email" id="email" name="email" required autocomplete="email" placeholder="you@school.ac.uk" autofocus>
+                        <input type="email" id="email" name="email" required autocomplete="email" placeholder="you@school.ac.uk" value="<?= htmlspecialchars($prefill_email) ?>" autofocus>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required autocomplete="current-password">
                     </div>
                     <button type="submit" class="btn btn-primary btn-full">Log In</button>
                 </form>
 
+                <p class="auth-footer-link">Forgot your password? Email <a href="mailto:hello@craftingcoral.com">hello@craftingcoral.com</a> for a reset link.</p>
                 <p class="auth-footer-link">Don't have an account yet? <a href="/#pricing">View pricing</a></p>
                 <p class="auth-footer-link"><a href="/">Back to main page</a></p>
             <?php endif; ?>

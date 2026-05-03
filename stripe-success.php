@@ -41,7 +41,16 @@ try {
             // and a duplicate update for renewals. Stripe webhook duplicates are rare; OK for now.
             record_payment($email, $customer_id, $payment_intent, $plan, $amount_paid);
 
-            // Log them in
+            // If this buyer has no password yet, send them to set one. Otherwise log them in.
+            if (!member_has_password($email)) {
+                $token = create_setup_token($email);
+                if ($token) {
+                    header('Location: /set-password.php?token=' . urlencode($token));
+                    exit;
+                }
+            }
+
+            // Existing member with a password (e.g. renewal) — log in
             $_SESSION['member_email'] = $email;
             session_regenerate_id(true);
         }

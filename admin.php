@@ -64,6 +64,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
     }
 
+    // Generate password setup link (admin shares manually)
+    if ($_POST['action'] === 'reset_password' && $is_admin) {
+        $email = strtolower(trim($_POST['email'] ?? ''));
+        if (!empty($email)) {
+            $token = create_setup_token($email);
+            if ($token) {
+                $setup_link = SITE_URL . '/set-password.php?token=' . urlencode($token);
+                $msg = 'Setup link generated for <strong>' . htmlspecialchars($email) . '</strong> (valid 24h):<br><code style="display:block;margin-top:8px;padding:8px;background:#f3f5f8;border-radius:4px;font-size:12px;word-break:break-all;user-select:all;">' . htmlspecialchars($setup_link) . '</code>Share this link with the member — they\'ll be able to set/reset their password.';
+            } else {
+                $msg_error = 'Could not generate link — member not found.';
+            }
+        }
+    }
+
     // Delete member
     if ($_POST['action'] === 'delete_member' && $is_admin) {
         $email = strtolower(trim($_POST['email'] ?? ''));
@@ -430,6 +444,11 @@ if ($is_admin) {
                                     <td style="color: var(--muted); font-size: 13px;"><?= date('j M Y', strtotime($m['paid_at'])) ?></td>
                                     <td style="white-space: nowrap;">
                                         <button type="button" class="btn btn-secondary" onclick="editMember('<?= htmlspecialchars($m['email'], ENT_QUOTES) ?>')">Edit</button>
+                                        <form method="POST" style="display:inline;" onsubmit="return confirm('Generate a password setup link for <?= htmlspecialchars($m['email']) ?>? The link will appear above for you to share.');">
+                                            <input type="hidden" name="action" value="reset_password">
+                                            <input type="hidden" name="email" value="<?= htmlspecialchars($m['email']) ?>">
+                                            <button type="submit" class="btn btn-secondary">Reset PW</button>
+                                        </form>
                                         <form method="POST" style="display:inline;" onsubmit="return confirm('Remove <?= htmlspecialchars($m['email']) ?>?');">
                                             <input type="hidden" name="action" value="delete_member">
                                             <input type="hidden" name="email" value="<?= htmlspecialchars($m['email']) ?>">
