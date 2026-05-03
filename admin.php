@@ -29,11 +29,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     // Add member manually
     if ($_POST['action'] === 'add_member' && $is_admin) {
         $email = strtolower(trim($_POST['email'] ?? ''));
+        $plan = $_POST['plan'] ?? 'lifetime';
+        $months = (int) ($_POST['months'] ?? 12);
+
+        if (!in_array($plan, ['annual', 'lifetime'], true)) $plan = 'lifetime';
+        if ($months < 1) $months = 12;
+        if ($months > 240) $months = 240; // cap at 20 years
+
         if (!empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            create_member($email, 'manual', 'manual');
-            $msg = 'Member added: ' . htmlspecialchars($email);
+            $expires_at = $plan === 'annual'
+                ? date('Y-m-d H:i:s', strtotime('+' . $months . ' months'))
+                : null;
+            create_member($email, 'manual', 'manual', $plan, 0, $expires_at);
+            $label = $plan === 'lifetime' ? 'lifetime' : $months . ' months';
+            $msg = 'Member added: ' . htmlspecialchars($email) . ' (' . $label . ')';
         } else {
             $msg_error = 'Invalid email address.';
+        }
+    }
+
+    // Change a member's plan (annual <-> lifetime)
+    if ($_POST['action'] === 'change_plan' && $is_admin) {
+        $email = strtolower(trim($_POST['email'] ?? ''));
+        $plan = $_POST['plan'] ?? '';
+        if (admin_set_plan($email, $plan)) {
+            $msg = 'Plan changed for ' . htmlspecialchars($email) . ' → ' . htmlspecialchars($plan);
+        } else {
+            $msg_error = 'Could not change plan — invalid plan or member not found.';
+        }
+    }
+
+    // Extend or shorten an annual member's expiry by N months
+    if ($_POST['action'] === 'extend_expiry' && $is_admin) {
+        $email = strtolower(trim($_POST['email'] ?? ''));
+        $months = (int) ($_POST['months'] ?? 0);
+        if ($months === 0) {
+            $msg_error = 'Please enter a non-zero number of months.';
+        } elseif (admin_extend_expiry($email, $months)) {
+            $sign = $months > 0 ? '+' : '';
+            $msg = 'Expiry adjusted for ' . htmlspecialchars($email) . ' (' . $sign . $months . ' months)';
+        } else {
+            $msg_error = 'Could not adjust expiry — only annual members can be extended.';
+        }
+    }
+
+    // Cancel access (sets expiry to past, keeps record)
+    if ($_POST['action'] === 'cancel_access' && $is_admin) {
+        $email = strtolower(trim($_POST['email'] ?? ''));
+        if (admin_cancel_access($email)) {
+            $msg = 'Access cancelled for ' . htmlspecialchars($email) . '. Member can be reactivated by extending expiry or changing plan.';
+        } else {
+            $msg_error = 'Could not cancel access.';
         }
     }
 
@@ -260,6 +306,16 @@ if ($is_admin) {
         .form-row input[type="email"] { flex: 1; padding: 8px 14px; border: 2px solid #e8e0d8; border-radius: var(--radius); font-family: inherit; font-size: 14px; }
         .form-row input:focus { outline: none; border-color: var(--primary); }
 
+        .add-member-form { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .add-member-form input[type="email"] { flex: 1 1 240px; padding: 8px 14px; border: 2px solid #e8e0d8; border-radius: var(--radius); font-family: inherit; font-size: 14px; }
+        .add-member-form input[type="number"] { padding: 8px 12px; border: 2px solid #e8e0d8; border-radius: var(--radius); font-family: inherit; font-size: 14px; }
+        .add-member-form select { padding: 8px 12px; border: 2px solid #e8e0d8; border-radius: var(--radius); font-family: inherit; font-size: 14px; background: var(--white); }
+        .add-member-form input:focus, .add-member-form select:focus { outline: none; border-color: var(--primary); }
+
+        .manage-row td { background: #f8f6f3; padding: 12px 16px; }
+        .manage-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .manage-actions input[type="number"] { padding: 6px 8px; border: 1px solid #e8e0d8; border-radius: var(--radius); font-family: inherit; font-size: 13px; }
+
         .file-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--sand); gap: 12px; flex-wrap: wrap; }
         .file-row:last-child { border-bottom: none; }
         .file-info { flex: 1; min-width: 200px; }
@@ -390,9 +446,14 @@ if ($is_admin) {
         <div class="card">
             <h2>Members <span class="badge"><?= count($members) ?></span></h2>
 
-            <form method="POST" class="form-row" style="margin-bottom: 20px;">
+            <form method="POST" class="add-member-form" style="margin-bottom: 20px;">
                 <input type="hidden" name="action" value="add_member">
-                <input type="email" name="email" placeholder="Add member manually (email)" required>
+                <input type="email" name="email" placeholder="member@school.ac.uk" required>
+                <select name="plan" id="addPlan" onchange="document.getElementById('addMonths').style.display = this.value === 'annual' ? 'inline-block' : 'none';">
+                    <option value="lifetime">Lifetime</option>
+                    <option value="annual">Annual (1 year default)</option>
+                </select>
+                <input type="number" name="months" id="addMonths" min="1" max="240" value="12" placeholder="months" style="display:none; width:90px;" title="Number of months of access">
                 <button type="submit" class="btn btn-primary btn-sm">Add Member</button>
             </form>
 
@@ -442,18 +503,60 @@ if ($is_admin) {
                                         <?php endif; ?>
                                     </td>
                                     <td style="color: var(--muted); font-size: 13px;"><?= date('j M Y', strtotime($m['paid_at'])) ?></td>
-                                    <td style="white-space: nowrap;">
-                                        <button type="button" class="btn btn-secondary" onclick="editMember('<?= htmlspecialchars($m['email'], ENT_QUOTES) ?>')">Edit</button>
-                                        <form method="POST" style="display:inline;" onsubmit="return confirm('Generate a password setup link for <?= htmlspecialchars($m['email']) ?>? The link will appear above for you to share.');">
-                                            <input type="hidden" name="action" value="reset_password">
-                                            <input type="hidden" name="email" value="<?= htmlspecialchars($m['email']) ?>">
-                                            <button type="submit" class="btn btn-secondary">Reset PW</button>
-                                        </form>
-                                        <form method="POST" style="display:inline;" onsubmit="return confirm('Remove <?= htmlspecialchars($m['email']) ?>?');">
-                                            <input type="hidden" name="action" value="delete_member">
-                                            <input type="hidden" name="email" value="<?= htmlspecialchars($m['email']) ?>">
-                                            <button type="submit" class="btn btn-danger">Remove</button>
-                                        </form>
+                                    <td style="white-space: nowrap; text-align: right;">
+                                        <button type="button" class="btn btn-secondary" onclick="toggleManage('manage-<?= htmlspecialchars(md5($m['email'])) ?>')">Manage</button>
+                                    </td>
+                                </tr>
+                                <tr id="manage-<?= htmlspecialchars(md5($m['email'])) ?>" class="manage-row" style="display:none;">
+                                    <td colspan="5">
+                                        <div class="manage-actions">
+                                            <button type="button" class="btn btn-secondary btn-sm" onclick="editMember('<?= htmlspecialchars($m['email'], ENT_QUOTES) ?>')">Edit Email</button>
+
+                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Generate a password setup link for <?= htmlspecialchars($m['email']) ?>?');">
+                                                <input type="hidden" name="action" value="reset_password">
+                                                <input type="hidden" name="email" value="<?= htmlspecialchars($m['email']) ?>">
+                                                <button type="submit" class="btn btn-secondary btn-sm">Reset Password</button>
+                                            </form>
+
+                                            <?php if (($m['plan'] ?? 'lifetime') !== 'lifetime'): ?>
+                                                <form method="POST" style="display:inline;" onsubmit="return confirm('Upgrade <?= htmlspecialchars($m['email']) ?> to Lifetime access?');">
+                                                    <input type="hidden" name="action" value="change_plan">
+                                                    <input type="hidden" name="email" value="<?= htmlspecialchars($m['email']) ?>">
+                                                    <input type="hidden" name="plan" value="lifetime">
+                                                    <button type="submit" class="btn btn-secondary btn-sm">→ Lifetime</button>
+                                                </form>
+                                            <?php else: ?>
+                                                <form method="POST" style="display:inline;" onsubmit="return confirm('Switch <?= htmlspecialchars($m['email']) ?> to Annual access (1 year from now)?');">
+                                                    <input type="hidden" name="action" value="change_plan">
+                                                    <input type="hidden" name="email" value="<?= htmlspecialchars($m['email']) ?>">
+                                                    <input type="hidden" name="plan" value="annual">
+                                                    <button type="submit" class="btn btn-secondary btn-sm">→ Annual</button>
+                                                </form>
+                                            <?php endif; ?>
+
+                                            <?php if (($m['plan'] ?? 'lifetime') === 'annual'): ?>
+                                                <form method="POST" style="display:inline-flex; gap:6px; align-items:center;">
+                                                    <input type="hidden" name="action" value="extend_expiry">
+                                                    <input type="hidden" name="email" value="<?= htmlspecialchars($m['email']) ?>">
+                                                    <label style="font-size:12px; color:var(--muted);">Adjust by</label>
+                                                    <input type="number" name="months" value="3" min="-120" max="120" step="1" style="width:70px;">
+                                                    <label style="font-size:12px; color:var(--muted);">months</label>
+                                                    <button type="submit" class="btn btn-secondary btn-sm">Apply</button>
+                                                </form>
+                                            <?php endif; ?>
+
+                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Cancel access for <?= htmlspecialchars($m['email']) ?>? Their record stays but they won\'t be able to log in.');">
+                                                <input type="hidden" name="action" value="cancel_access">
+                                                <input type="hidden" name="email" value="<?= htmlspecialchars($m['email']) ?>">
+                                                <button type="submit" class="btn btn-danger btn-sm">Cancel Access</button>
+                                            </form>
+
+                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Permanently remove <?= htmlspecialchars($m['email']) ?>? This deletes the record entirely.');">
+                                                <input type="hidden" name="action" value="delete_member">
+                                                <input type="hidden" name="email" value="<?= htmlspecialchars($m['email']) ?>">
+                                                <button type="submit" class="btn btn-danger btn-sm">Delete Permanently</button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -587,6 +690,13 @@ function deleteFile(slot, filename) {
     document.getElementById('deleteSlot').value = slot;
     document.getElementById('deleteFilename').value = filename;
     document.getElementById('deleteFileForm').submit();
+}
+
+// Toggle the per-row manage panel
+function toggleManage(id) {
+    var row = document.getElementById(id);
+    if (!row) return;
+    row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
 }
 
 // Edit member handler

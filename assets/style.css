@@ -1234,6 +1234,7 @@ h1, h2, h3, h4 {
     border-radius: var(--radius);
     background: var(--color-white);
     color: var(--color-text);
+    -webkit-text-fill-color: var(--color-text);
     transition: border-color 0.2s ease;
 }
 
@@ -1244,6 +1245,16 @@ h1, h2, h3, h4 {
 
 .form-group input::placeholder {
     color: var(--color-text-muted);
+}
+
+/* Override Chrome/Safari autofill (yellow background + invisible text) */
+.form-group input:-webkit-autofill,
+.form-group input:-webkit-autofill:hover,
+.form-group input:-webkit-autofill:focus,
+.form-group input:-webkit-autofill:active {
+    -webkit-text-fill-color: var(--color-text) !important;
+    -webkit-box-shadow: 0 0 0 1000px var(--color-white) inset !important;
+    caret-color: var(--color-text);
 }
 
 .auth-form .btn {

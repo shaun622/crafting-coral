@@ -56,11 +56,15 @@ function get_member_by_email(string $email): array|false
     return $result->fetchArray(SQLITE3_ASSOC) ?: false;
 }
 
-function create_member(string $email, string $stripe_customer_id, string $stripe_payment_id, string $plan = 'lifetime', int $amount_paid = 0): bool
+function create_member(string $email, string $stripe_customer_id, string $stripe_payment_id, string $plan = 'lifetime', int $amount_paid = 0, ?string $expires_at_override = null): bool
 {
     $db = get_db();
-    // Annual: 1 year from now. Lifetime/manual: NULL (never expires).
-    $expires_at = $plan === 'annual' ? date('Y-m-d H:i:s', strtotime('+1 year')) : null;
+    // Annual: 1 year from now (or override). Lifetime: NULL (never expires).
+    if ($plan === 'annual') {
+        $expires_at = $expires_at_override ?? date('Y-m-d H:i:s', strtotime('+1 year'));
+    } else {
+        $expires_at = null;
+    }
 
     $stmt = $db->prepare('INSERT OR IGNORE INTO members (email, stripe_customer_id, stripe_payment_id, paid_at, plan, amount_paid, expires_at) VALUES (:email, :cid, :pid, :paid_at, :plan, :amount, :expires_at)');
     $stmt->bindValue(':email', strtolower(trim($email)), SQLITE3_TEXT);
@@ -148,6 +152,69 @@ function get_member_status(string $email): string
 function is_member_active(string $email): bool
 {
     return get_member_status($email) === 'active';
+}
+
+/**
+ * Admin: change a member's plan. Switching to lifetime nulls expires_at.
+ * Switching to annual sets expires_at to +1 year from now (or keeps existing
+ * future expiry if already set).
+ */
+function admin_set_plan(string $email, string $plan): bool
+{
+    if (!in_array($plan, ['annual', 'lifetime'], true)) return false;
+    $member = get_member_by_email($email);
+    if (!$member) return false;
+
+    $db = get_db();
+    if ($plan === 'lifetime') {
+        $stmt = $db->prepare('UPDATE members SET plan = "lifetime", expires_at = NULL WHERE email = :email');
+    } else {
+        // Keep existing future expiry if any, else default to +1 year
+        $existing_expiry = $member['expires_at'] ?? null;
+        $expires = ($existing_expiry && strtotime($existing_expiry) > time())
+            ? $existing_expiry
+            : date('Y-m-d H:i:s', strtotime('+1 year'));
+        $stmt = $db->prepare('UPDATE members SET plan = "annual", expires_at = :exp WHERE email = :email');
+        $stmt->bindValue(':exp', $expires, SQLITE3_TEXT);
+    }
+    $stmt->bindValue(':email', strtolower(trim($email)), SQLITE3_TEXT);
+    return $stmt->execute() !== false;
+}
+
+/**
+ * Admin: extend an annual member's expiry by N months. If currently expired,
+ * extends from "now" rather than the past expiry date.
+ */
+function admin_extend_expiry(string $email, int $months): bool
+{
+    if ($months === 0) return false;
+    $member = get_member_by_email($email);
+    if (!$member) return false;
+    if (($member['plan'] ?? 'lifetime') !== 'annual') return false;
+
+    $current = $member['expires_at'] ?? null;
+    $base_ts = ($current && strtotime($current) > time()) ? strtotime($current) : time();
+    $new_expiry = date('Y-m-d H:i:s', strtotime(($months > 0 ? '+' : '') . $months . ' months', $base_ts));
+
+    $db = get_db();
+    $stmt = $db->prepare('UPDATE members SET expires_at = :exp WHERE email = :email');
+    $stmt->bindValue(':exp', $new_expiry, SQLITE3_TEXT);
+    $stmt->bindValue(':email', strtolower(trim($email)), SQLITE3_TEXT);
+    return $stmt->execute() !== false;
+}
+
+/**
+ * Admin: cancel access by setting expires_at to now (effectively expired).
+ * Keeps the member record so they can be revived by extending later.
+ */
+function admin_cancel_access(string $email): bool
+{
+    $db = get_db();
+    // Set both plan to annual (to make expiry meaningful) and expires_at to past.
+    $stmt = $db->prepare('UPDATE members SET plan = "annual", expires_at = :exp WHERE email = :email');
+    $stmt->bindValue(':exp', date('Y-m-d H:i:s', time() - 60), SQLITE3_TEXT);
+    $stmt->bindValue(':email', strtolower(trim($email)), SQLITE3_TEXT);
+    return $stmt->execute() !== false;
 }
 
 // --- Passwords ---
