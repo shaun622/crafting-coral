@@ -78,9 +78,9 @@ require_once __DIR__ . '/includes/header.php';
                 <p class="auth-footer-link"><a href="/login.php">Use a different email</a></p>
 
             <?php elseif ($no_password_email): ?>
-                <h1>Set Up Required</h1>
-                <p>Your account for <strong><?= htmlspecialchars($no_password_email) ?></strong> hasn't been set up yet.</p>
-                <p>Please contact <a href="mailto:hello@craftingcoral.com">hello@craftingcoral.com</a> and we'll send you a setup link to create your password.</p>
+                <h1>Set Up Your Password</h1>
+                <p>Your account for <strong><?= htmlspecialchars($no_password_email) ?></strong> doesn't have a password set yet.</p>
+                <p><a href="/forgot-password.php" class="btn btn-primary btn-full">Email Me a Setup Link</a></p>
                 <p class="auth-footer-link"><a href="/login.php">Use a different email</a></p>
 
             <?php else: ?>
@@ -104,7 +104,7 @@ require_once __DIR__ . '/includes/header.php';
                     <button type="submit" class="btn btn-primary btn-full">Log In</button>
                 </form>
 
-                <p class="auth-footer-link">Forgot your password? Email <a href="mailto:hello@craftingcoral.com">hello@craftingcoral.com</a> for a reset link.</p>
+                <p class="auth-footer-link"><a href="/forgot-password.php">Forgot your password?</a></p>
                 <p class="auth-footer-link">Don't have an account yet? <a href="/#pricing">View pricing</a></p>
                 <p class="auth-footer-link"><a href="/">Back to main page</a></p>
             <?php endif; ?>
