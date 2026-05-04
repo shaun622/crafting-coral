@@ -43,6 +43,11 @@ function get_db(): SQLite3
     if (!in_array('password_hash', $existing)) {
         $db->exec('ALTER TABLE members ADD COLUMN password_hash TEXT DEFAULT NULL');
     }
+    if (!in_array('login_code_hash', $existing)) {
+        $db->exec('ALTER TABLE members ADD COLUMN login_code_hash TEXT DEFAULT NULL');
+        $db->exec('ALTER TABLE members ADD COLUMN login_code_expires DATETIME DEFAULT NULL');
+        $db->exec('ALTER TABLE members ADD COLUMN login_code_attempts INTEGER DEFAULT 0');
+    }
 
     return $db;
 }
@@ -268,6 +273,67 @@ function get_member_by_setup_token(string $token): array|false
     $stmt->bindValue(':tok', $token, SQLITE3_TEXT);
     $stmt->bindValue(':now', date('Y-m-d H:i:s'), SQLITE3_TEXT);
     return $stmt->execute()->fetchArray(SQLITE3_ASSOC) ?: false;
+}
+
+// --- 2FA email login codes ---
+
+const LOGIN_CODE_TTL = 600;          // 10 minutes
+const LOGIN_CODE_MAX_ATTEMPTS = 5;
+
+/**
+ * Generate a 6-digit code for the member, store its hash + 10min expiry,
+ * and reset the attempts counter. Returns the plaintext code so the caller
+ * can email it.
+ */
+function set_login_code(string $email): ?string
+{
+    if (!get_member_by_email($email)) return null;
+    $code = sprintf('%06d', random_int(0, 999999));
+    $hash = password_hash($code, PASSWORD_DEFAULT);
+    $expires = date('Y-m-d H:i:s', time() + LOGIN_CODE_TTL);
+
+    $db = get_db();
+    $stmt = $db->prepare('UPDATE members SET login_code_hash = :hash, login_code_expires = :exp, login_code_attempts = 0 WHERE email = :email');
+    $stmt->bindValue(':hash', $hash, SQLITE3_TEXT);
+    $stmt->bindValue(':exp', $expires, SQLITE3_TEXT);
+    $stmt->bindValue(':email', strtolower(trim($email)), SQLITE3_TEXT);
+    $stmt->execute();
+    return $code;
+}
+
+/**
+ * Returns one of: 'ok', 'wrong', 'expired', 'no_code', 'too_many_attempts'.
+ * Increments the attempt counter on every wrong try; clears the code after
+ * LOGIN_CODE_MAX_ATTEMPTS. Caller must clear_login_code() on success.
+ */
+function verify_login_code(string $email, string $plain_code): string
+{
+    $member = get_member_by_email($email);
+    if (!$member || empty($member['login_code_hash'])) return 'no_code';
+    if (empty($member['login_code_expires']) || strtotime($member['login_code_expires']) < time()) return 'expired';
+    if ((int) ($member['login_code_attempts'] ?? 0) >= LOGIN_CODE_MAX_ATTEMPTS) {
+        clear_login_code($email);
+        return 'too_many_attempts';
+    }
+
+    if (password_verify($plain_code, $member['login_code_hash'])) {
+        return 'ok';
+    }
+
+    // Record the failed attempt
+    $db = get_db();
+    $stmt = $db->prepare('UPDATE members SET login_code_attempts = login_code_attempts + 1 WHERE email = :email');
+    $stmt->bindValue(':email', strtolower(trim($email)), SQLITE3_TEXT);
+    $stmt->execute();
+    return 'wrong';
+}
+
+function clear_login_code(string $email): void
+{
+    $db = get_db();
+    $stmt = $db->prepare('UPDATE members SET login_code_hash = NULL, login_code_expires = NULL, login_code_attempts = 0 WHERE email = :email');
+    $stmt->bindValue(':email', strtolower(trim($email)), SQLITE3_TEXT);
+    $stmt->execute();
 }
 
 // --- Content Settings ---
