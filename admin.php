@@ -268,6 +268,7 @@ if ($is_admin) {
             --danger: #c0392b;
             --radius: 8px;
         }
+        html { color-scheme: light; }
         body { font-family: 'Inter', -apple-system, sans-serif; font-size: 15px; line-height: 1.6; color: var(--text); background: var(--sand); }
 
         .admin-nav { background: var(--deep); padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
@@ -334,8 +335,16 @@ if ($is_admin) {
         .login-card { max-width: 380px; width: 100%; background: var(--white); border-radius: var(--radius); padding: 40px 32px; box-shadow: 0 8px 40px rgba(12,53,71,0.12); text-align: center; }
         .login-card h1 { font-size: 1.3rem; color: var(--deep); margin-bottom: 4px; }
         .login-card p { color: var(--text-light); font-size: 14px; margin-bottom: 24px; }
-        .login-card input[type="password"] { display: block; width: 100%; padding: 10px 14px; border: 2px solid #e8e0d8; border-radius: var(--radius); font-family: inherit; font-size: 14px; margin-bottom: 16px; text-align: center; }
+        .login-card .password-wrap { position: relative; margin-bottom: 16px; }
+        .login-card .password-wrap input { display: block; width: 100%; padding: 10px 44px 10px 14px; border: 2px solid #e8e0d8; border-radius: var(--radius); font-family: inherit; font-size: 14px; text-align: center; color: var(--text); -webkit-text-fill-color: var(--text); }
         .login-card input:focus { outline: none; border-color: var(--primary); }
+        .login-card input::-ms-reveal, .login-card input::-ms-clear { display: none; }
+        .login-card .password-toggle { position: absolute; top: 0; bottom: 0; right: 4px; width: 40px; display: flex; align-items: center; justify-content: center; background: none; border: none; padding: 0; cursor: pointer; color: var(--muted); }
+        .login-card .password-toggle:hover { color: var(--primary); }
+        .login-card .password-toggle svg { width: 18px; height: 18px; }
+        .login-card .password-toggle .icon-eye-off { display: none; }
+        .login-card .password-wrap.is-revealed .password-toggle .icon-eye { display: none; }
+        .login-card .password-wrap.is-revealed .password-toggle .icon-eye-off { display: block; }
         .login-card .btn { width: 100%; padding: 10px; }
         .login-error { color: var(--danger); font-size: 13px; margin-bottom: 12px; }
 
@@ -395,11 +404,28 @@ if ($is_admin) {
             <?php endif; ?>
             <form method="POST">
                 <input type="hidden" name="action" value="login">
-                <input type="password" name="password" placeholder="Password" autofocus>
+                <div class="password-wrap">
+                    <input type="password" name="password" placeholder="Password" autofocus>
+                    <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false" onclick="togglePw(this)">
+                        <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <svg class="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                    </button>
+                </div>
                 <button type="submit" class="btn btn-primary">Sign In</button>
             </form>
         </div>
     </div>
+    <script>
+    function togglePw(btn) {
+        var wrap = btn.closest('.password-wrap');
+        var input = wrap.querySelector('input');
+        var reveal = input.type === 'password';
+        input.type = reveal ? 'text' : 'password';
+        wrap.classList.toggle('is-revealed', reveal);
+        btn.setAttribute('aria-pressed', reveal ? 'true' : 'false');
+        btn.setAttribute('aria-label', reveal ? 'Hide password' : 'Show password');
+    }
+    </script>
 
 <?php else: ?>
     <nav class="admin-nav">

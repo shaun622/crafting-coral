@@ -62,14 +62,8 @@ require_once __DIR__ . '/includes/header.php';
                 <form method="POST" class="auth-form">
                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                     <input type="hidden" name="token" value="<?= htmlspecialchars($token) ?>">
-                    <div class="form-group">
-                        <label for="password">New password</label>
-                        <input type="password" id="password" name="password" required minlength="8" autocomplete="new-password" autofocus>
-                    </div>
-                    <div class="form-group">
-                        <label for="confirm">Confirm password</label>
-                        <input type="password" id="confirm" name="confirm" required minlength="8" autocomplete="new-password">
-                    </div>
+                    <?php password_field('password', 'password', 'New password', 'required minlength="8" autocomplete="new-password" autofocus'); ?>
+                    <?php password_field('confirm', 'confirm', 'Confirm password', 'required minlength="8" autocomplete="new-password"'); ?>
                     <button type="submit" class="btn btn-primary btn-full">Set Password &amp; Log In</button>
                 </form>
             <?php endif; ?>

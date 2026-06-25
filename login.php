@@ -208,10 +208,7 @@ require_once __DIR__ . '/includes/header.php';
                         <label for="email">Email address</label>
                         <input type="email" id="email" name="email" required autocomplete="email" placeholder="you@school.ac.uk" value="<?= htmlspecialchars($prefill_email) ?>" autofocus>
                     </div>
-                    <div class="form-group">
-                        <label for="password">Password</label>
-                        <input type="password" id="password" name="password" required autocomplete="current-password">
-                    </div>
+                    <?php password_field('password', 'password', 'Password', 'required autocomplete="current-password"'); ?>
                     <button type="submit" class="btn btn-primary btn-full">Continue</button>
                 </form>
 

@@ -97,6 +97,10 @@
 
 html {
     scroll-behavior: smooth;
+    /* Keep form controls in light mode so typed text never inherits a
+       light UA fill colour on our white inputs (the dark-mode "invisible
+       password text" bug). */
+    color-scheme: light;
 }
 
 body {
@@ -1255,6 +1259,64 @@ h1, h2, h3, h4 {
     -webkit-text-fill-color: var(--color-text) !important;
     -webkit-box-shadow: 0 0 0 1000px var(--color-white) inset !important;
     caret-color: var(--color-text);
+}
+
+/* Hide Edge/IE's native password reveal + clear buttons so they don't
+   duplicate our custom toggle. */
+.form-group input::-ms-reveal,
+.form-group input::-ms-clear {
+    display: none;
+}
+
+/* --- Password reveal toggle --- */
+.password-wrap {
+    position: relative;
+}
+
+.password-wrap input {
+    padding-right: 48px;
+}
+
+.password-toggle {
+    position: absolute;
+    top: 2px;
+    bottom: 2px;
+    right: 2px;
+    width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: var(--color-text-muted);
+    border-radius: var(--radius);
+    transition: color 0.2s ease;
+}
+
+.password-toggle:hover,
+.password-toggle:focus-visible {
+    color: var(--color-primary);
+    outline: none;
+}
+
+.password-toggle svg {
+    width: 20px;
+    height: 20px;
+    display: block;
+}
+
+.password-toggle .icon-eye-off {
+    display: none;
+}
+
+.password-wrap.is-revealed .password-toggle .icon-eye {
+    display: none;
+}
+
+.password-wrap.is-revealed .password-toggle .icon-eye-off {
+    display: block;
 }
 
 .auth-form .btn {
