@@ -1232,7 +1232,9 @@ h1, h2, h3, h4 {
     display: block;
     width: 100%;
     padding: 12px 16px;
-    font-family: var(--font-family);
+    /* Use the UI font (Inter/system), not Optima — Optima is missing the
+       password mask • glyph, which made typed password dots invisible. */
+    font-family: var(--font-family-ui);
     font-size: 15px;
     border: 2px solid var(--color-sand-dark);
     border-radius: var(--radius);
